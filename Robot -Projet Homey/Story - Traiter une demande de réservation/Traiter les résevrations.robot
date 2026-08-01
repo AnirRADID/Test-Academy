@@ -111,9 +111,9 @@ Demande Confirmée Par L'Hote Puis Payée Par Le Voyageur
 
 
 
-Nettoyer 
+Nettoyer
     Run Keyword If Test Failed    Nettoyer La Page Réservations
-    
+    Close All Browsers
 
 Nettoyer La Page Réservations
     Ouvrir Le Navigateur Et Accéder A La Page d'Accueil
