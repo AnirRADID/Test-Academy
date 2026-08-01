@@ -1,0 +1,10 @@
+# Sorties générées par l'exécution de Robot Framework (regénérées à chaque run)
+results/
+log.html
+report.html
+output.xml
+
+# Environnement Python
+.venv/
+__pycache__/
+*.pyc
