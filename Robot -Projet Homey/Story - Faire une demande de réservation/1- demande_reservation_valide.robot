@@ -3,7 +3,7 @@ Library             SeleniumLibrary
 Resource    ../resources/commun.resource
 Resource    ../resources/Faire une demande de réservation.resource
 
-Test Setup          Effectuer Une Connexion Réussie
+Test Setup          Effectuer Une Connexion Avec Un Compte Valide
 Test Teardown       Effectuer Une Annulation De Réservation
 
 
