@@ -1,0 +1,54 @@
+# Squash TM sur ta machine — fil rouge Homey, Partie B.
+#
+# POURQUOI LES TROIS DERNIERES VARIABLES SONT L'ESSENTIEL
+#   Sans elles, Squash demarre, l'interface marche parfaitement... et il refuse en
+#   SILENCE toute connexion a son interface de programmation. Pire : il ne peut meme
+#   pas fabriquer le jeton qui servirait a s'y connecter. Aucun resultat de test ne
+#   remonterait jamais depuis Jenkins.
+#   Elles ecrasent le fichier de configuration interne du conteneur : rien a monter,
+#   rien a editer a la main. Verifie sur une instance neuve le 17/09/2026.
+#
+# DEMARRAGE
+#   1. copier .env.exemple en .env, et y mettre trois valeurs au hasard (voir le fichier)
+#   2. docker compose up -d
+#   3. patienter 2 a 3 min la premiere fois (Squash cree sa base), puis ouvrir
+#      http://127.0.0.1:8090/squash      <-- l'adresse DOIT finir par /squash
+#   4. premiere connexion : admin / admin, a changer tout de suite
+name: squash
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: squashtm
+      POSTGRES_DB: squashtm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copier .env.exemple en .env}
+    volumes:
+      - squash-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U squashtm -d squashtm"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  squash:
+    image: squashtest/squash:14.0.4
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      SPRING_PROFILES_ACTIVE: postgresql
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/squashtm
+      SPRING_DATASOURCE_USERNAME: squashtm
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?copier .env.exemple en .env}
+      # --- les trois qui ouvrent l'interface de programmation ---------------------
+      SQUASH_CRYPTO_SECRET: ${SQUASH_CRYPTO:?copier .env.exemple en .env}
+      SQUASH_REST_API_JWT_SECRET: ${SQUASH_JWT:?copier .env.exemple en .env}
+      SQUASH_REST_API_DISALLOW_BASIC_AUTHENTICATION: "false"
+    ports:
+      # Squash n'ecoute que sur ta machine : rien n'est expose au reseau.
+      - "127.0.0.1:8090:8080"
+
+volumes:
+  squash-db:
