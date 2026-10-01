@@ -8,16 +8,15 @@ Au module précédent, vous avez corrigé la proposition de Claude jusqu'à obte
 d'exigences dont vous êtes satisfait. Dans ce module, cette liste devient réellement des
 tickets dans Jira — c'est la première chose qui "existe" durablement dans le processus.
 
-## Étape 1 — Créer un projet Jira vide (si vous n'en avez pas déjà un pour cet usage)
+## Étape 1 — Créer un projet Jira vide
 
 Cette partie se fait dans votre navigateur, pas par un prompt : la création d'un tout
-nouveau projet Jira est une action qui vous appartient, pas à Claude.
+nouveau projet Jira est une action qui vous appartient, pas à Claude. Vous avez déjà votre
+compte Atlassian (créé au module 00) — connectez-vous-y.
 
-1. Si vous n'avez pas encore de compte Atlassian, créez-en un gratuitement sur le site
-   d'Atlassian, puis créez un nouveau site Jira (ça prend deux minutes).
-2. Dans Jira, créez un nouveau projet, modèle **Scrum** (c'est ce modèle qui nous donne des
+1. Dans Jira, créez un nouveau projet, modèle **Scrum** (c'est ce modèle qui nous donne des
    sprints, dont on se servira au module 07).
-3. Donnez-lui un nom clair, par exemple le nom de l'application que vous testez. Jira vous
+2. Donnez-lui un nom clair, par exemple le nom de l'application que vous testez. Jira vous
    proposera automatiquement une **clé de projet** courte (par exemple `MONAPP`) — notez-la,
    vous en aurez besoin dans le prompt ci-dessous.
 

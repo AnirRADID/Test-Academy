@@ -11,17 +11,23 @@ explications de chaque prompt, reportez-vous au module correspondant.
 > sont encore au stade de plan détaillé (voir chaque fichier `modules/0X-*.md`) — leurs
 > prompts définitifs viendront compléter ce pense-bête au fur et à mesure.
 
-## [Module 00](../modules/00-avant-de-commencer.md) — Vérifications
+## [Module 00](../modules/00-avant-de-commencer.md) — Installation de zéro
 
 ```
-Peux-tu vérifier que tu as accès à mon compte Atlassian (Jira) ? Dis-moi simplement
-oui ou non, et si oui, à quelle adresse (quel site Atlassian).
+Bonjour, confirme-moi que tu fonctionnes et que tu vois bien le dossier formation-tests-ia
+dans lequel on travaille.
 ```
 
 ```
-Je n'ai pas encore Docker Desktop sur mon ordinateur. Peux-tu me dire, étape par étape
-et en français simple, comment le télécharger et l'installer pour mon système
-d'exploitation (précise que je suis sur {WINDOWS, MAC OU LINUX}) ?
+Je veux que tu puisses lire et créer des tickets dans mon compte Atlassian (Jira), que je
+viens de créer. Dis-moi précisément comment activer ce connecteur dans Claude Code, puis
+une fois que c'est fait, vérifie que tu y as bien accès et donne-moi l'adresse du site
+Atlassian que tu vois.
+```
+
+```
+Je n'ai pas encore Docker Desktop sur mon ordinateur. Détecte mon système d'exploitation et
+dis-moi, étape par étape et en français simple, comment le télécharger et l'installer.
 ```
 
 ## [Module 01](../modules/01-environnement-squash.md) — Démarrer Squash TM
