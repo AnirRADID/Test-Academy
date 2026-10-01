@@ -1,446 +1,161 @@
 {
  "projet": {
-  "name": "Homey-Demo",
-  "label": "Homey"
+  "name": "HVC",
+  "label": "Homey via Claude"
  },
  "campagne": {
-  "name": "CAMP-01 Recherche de logement",
+  "name": "CAMP-01 HVC Sprint 1",
   "iteration": "IT-01 Recette v1"
  },
  "exigences": [
   {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-10",
-   "name": "CA-02 - Recherche reussie avec des dates valides",
-   "description": "Critère d'acceptation n°02 — Recherche reussie avec des dates valides. Ticket Jira : HOM-10.",
-   "criticality": "MAJOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-02 - Filtrer les resultats sur une periode valide"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-11",
-   "name": "CA-03 - Recherche reussie avec un nombre de voyageurs valide",
-   "description": "Critère d'acceptation n°03 — Recherche reussie avec un nombre de voyageurs valide. Ticket Jira : HOM-11.",
-   "criticality": "MAJOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-03 - Filtrer les resultats sur un nombre de voyageurs"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-12",
-   "name": "CA-04 - Affichage des resultats en liste et sur la carte",
-   "description": "Critère d'acceptation n°04 — Affichage des resultats en liste et sur la carte. Ticket Jira : HOM-12.",
-   "criticality": "MAJOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-04 - Afficher les resultats en liste et sur la carte"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-13",
-   "name": "CA-05 - Survol d une annonce et fiche sur la carte",
-   "description": "Critère d'acceptation n°05 — Survol d une annonce et fiche sur la carte. Ticket Jira : HOM-13.",
-   "criticality": "MINOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-05 - Survoler une annonce et afficher sa fiche"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-14",
-   "name": "CA-06 - Recherche refusee si la destination est vide",
-   "description": "Critère d'acceptation n°06 — Recherche refusee si la destination est vide. Ticket Jira : HOM-14.",
-   "criticality": "MAJOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-06 - Lancer une recherche sans destination"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-15",
-   "name": "CA-07 - Aucun resultat si la destination n a aucun logement",
-   "description": "Critère d'acceptation n°07 — Aucun resultat si la destination n a aucun logement. Ticket Jira : HOM-15.",
-   "criticality": "MAJOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-07 - Rechercher une destination sans logement"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-16",
-   "name": "CA-08 - Recherche refusee si la periode est invalide",
-   "description": "Critère d'acceptation n°08 — Recherche refusee si la periode est invalide. Ticket Jira : HOM-16.",
-   "criticality": "MAJOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-08 - Lancer une recherche avec une periode inversee"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-17",
-   "name": "CA-09 - Recherche sans voyageur indique",
-   "description": "Critère d'acceptation n°09 — Recherche sans voyageur indique. Ticket Jira : HOM-17.",
-   "criticality": "MINOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-09 - Rechercher sans indiquer de voyageur"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-18",
-   "name": "CA-10 - Aucun resultat pour la periode demandee",
-   "description": "Critère d'acceptation n°10 — Aucun resultat pour la periode demandee. Ticket Jira : HOM-18.",
-   "criticality": "MAJOR",
-   "status": "APPROVED",
-   "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-10 - Rechercher sur une periode sans disponibilite"
-   ]
-  },
-  {
-   "dossier": [
-    "Exigences Jira"
-   ],
-   "reference": "HOM-9",
-   "name": "CA-01 - Recherche reussie sans connexion prealable",
-   "description": "Critère d'acceptation n°01 — Recherche reussie sans connexion prealable. Ticket Jira : HOM-9.",
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-1",
+   "name": "HVC-1 - Recherche de logements par destination et dates",
+   "description": "En tant que voyageur, je veux rechercher des logements par ville, dates d'arrivee/depart et nombre de voyageurs, afin de trouver un hebergement disponible pour mon sejour. Porte les deux anomalies connues CT-06 (destination vide non refusee) et CT-08 (periode inversee non signalee). Ticket Jira : HVC-1.",
    "criticality": "CRITICAL",
    "status": "APPROVED",
    "category": "CAT_FUNCTIONAL",
-   "couvert_par": [
-    "CT-01 - Rechercher un logement sans etre connecte"
-   ]
+   "couvert_par": ["TC-HVC-1 - Recherche de logements par destination et dates"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-2",
+   "name": "HVC-2 - Recherche avancee par filtres",
+   "description": "En tant que voyageur, je veux affiner ma recherche par nombre de chambres/pieces, type de piece et fourchette de prix, afin de ne voir que les logements pertinents. Ticket Jira : HVC-2.",
+   "criticality": "MAJOR",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-2 - Recherche avancee par filtres"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-3",
+   "name": "HVC-3 - Filtrage par equipements et installations",
+   "description": "En tant que voyageur, je veux cocher des equipements (wifi, piscine, climatisation...) et des installations (parking, securite, aire de jeux...), afin de cibler des logements avec le confort recherche. Ticket Jira : HVC-3.",
+   "criticality": "MINOR",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-3 - Filtrage par equipements et installations"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-4",
+   "name": "HVC-4 - Recherche avec ou sans animaux",
+   "description": "En tant que voyageur avec ou sans animal, je veux indiquer si je voyage avec un animal, afin de ne voir que les logements qui les acceptent (ou non). Ticket Jira : HVC-4.",
+   "criticality": "MINOR",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-4 - Recherche avec ou sans animaux"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-5",
+   "name": "HVC-5 - Navigation par type de logement",
+   "description": "En tant que visiteur, je veux parcourir les logements par categorie (Appartement, Maison, Studio, Loft, Chambre d'hotes, Copropriete), afin de explorer l'offre sans passer par un formulaire de recherche. Ticket Jira : HVC-5.",
+   "criticality": "MAJOR",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-5 - Navigation par type de logement"]
   }
  ],
  "cas_de_test": [
   {
-   "dossier": [
-    "Recherche de logement",
-    "Destination"
-   ],
-   "reference": "CT-01",
-   "name": "CT-01 - Rechercher un logement sans etre connecte",
-   "description": "Vérifie l'exigence CA-01.",
+   "dossier": ["Recherche de logement"],
+   "reference": "TC-HVC-1",
+   "name": "TC-HVC-1 - Recherche de logements par destination et dates",
+   "description": "Automatise par tests/tc-hvc-1-recherche-destination-dates.spec.ts. Verifie l'exigence HVC-1.",
    "prerequisite": "",
    "importance": "HIGH",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-01 - Recherche reussie sans connexion prealable"
-   ],
+   "verifie": ["HVC-1 - Recherche de logements par destination et dates"],
    "steps": [
     {
-     "action": "Ouvrir http://livraison3.testacademy.fr/ sans se connecter.",
-     "expected_result": "La page d'accueil s'affiche, titre « Accueil - Livraison 3 », et aucun avatar ni menu de compte n'est visible."
+     "action": "Lancer une recherche avec une ville, des dates d'arrivee/depart valides et un nombre de voyageurs.",
+     "expected_result": "La page de resultats s'affiche avec les logements correspondants."
     },
     {
-     "action": "Dans le champ Destination, indiquer « Miami » parmi les destinations proposées.",
-     "expected_result": "Le bouton de la liste affiche « Miami »."
+     "action": "Lancer une recherche sans indiquer de destination.",
+     "expected_result": "La recherche est refusee : aucun resultat n'est affiche avec une destination vide (defaut connu CT-06, actuellement en echec)."
     },
     {
-     "action": "Cliquer sur Chercher.",
-     "expected_result": "La page de résultats s'affiche, titre « Search Results - Livraison 3 », l'URL contient city=miami, et le compteur annonce un nombre non nul de logements."
+     "action": "Lancer une recherche avec une date de fin anterieure a la date de debut.",
+     "expected_result": "Un message signale que la periode est invalide, ou la recherche est refusee (defaut connu CT-08, actuellement en echec)."
     }
    ]
   },
   {
-   "dossier": [
-    "Recherche de logement",
-    "Dates"
-   ],
-   "reference": "CT-02",
-   "name": "CT-02 - Filtrer les resultats sur une periode valide",
-   "description": "Vérifie l'exigence CA-02.",
-   "prerequisite": "",
-   "importance": "HIGH",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-02 - Recherche reussie avec des dates valides"
-   ],
-   "steps": [
-    {
-     "action": "Depuis la page d'accueil, indiquer « Miami » dans le champ Destination.",
-     "expected_result": "Le bouton de la liste affiche « Miami »."
-    },
-    {
-     "action": "Cliquer sur Chercher et relever le nombre de résultats affiché par le compteur.",
-     "expected_result": "Un nombre non nul est affiché. Le noter : c'est la référence de comparaison."
-    },
-    {
-     "action": "Revenir à la recherche, ouvrir le calendrier et sélectionner J+11 comme date de début puis J+16 comme date de fin.",
-     "expected_result": "Les champs Début et Fin affichent les deux dates au format AAAA-MM-JJ."
-    },
-    {
-     "action": "Cliquer sur Chercher.",
-     "expected_result": "Le compteur affiche STRICTEMENT MOINS de résultats qu'à l'étape 2 : le filtrage par période est appliqué."
-    }
-   ]
-  },
-  {
-   "dossier": [
-    "Recherche de logement",
-    "Voyageurs"
-   ],
-   "reference": "CT-03",
-   "name": "CT-03 - Filtrer les resultats sur un nombre de voyageurs",
-   "description": "Vérifie l'exigence CA-03.",
-   "prerequisite": "",
-   "importance": "HIGH",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-03 - Recherche reussie avec un nombre de voyageurs valide"
-   ],
-   "steps": [
-    {
-     "action": "Depuis la page d'accueil, indiquer « Miami » dans le champ Destination.",
-     "expected_result": "Le bouton de la liste affiche « Miami »."
-    },
-    {
-     "action": "Cliquer sur Chercher, puis relever le titre des logements dont la capacité annoncée est la plus grande.",
-     "expected_result": "La page de résultats affiche des logements de plusieurs capacités. Noter le titre d'un logement dont la capacité est SUPÉRIEURE à 4 voyageurs."
-    },
-    {
-     "action": "Revenir à la recherche, indiquer 4 dans le champ Voyageurs, puis cliquer sur Chercher.",
-     "expected_result": "Le logement noté à l'étape 2 — dont la capacité dépasse 4 — figure TOUJOURS dans les résultats : il peut accueillir 4 voyageurs."
-    }
-   ]
-  },
-  {
-   "dossier": [
-    "Recherche de logement",
-    "Affichage"
-   ],
-   "reference": "CT-04",
-   "name": "CT-04 - Afficher les resultats en liste et sur la carte",
-   "description": "Vérifie l'exigence CA-04.",
+   "dossier": ["Recherche de logement"],
+   "reference": "TC-HVC-2",
+   "name": "TC-HVC-2 - Recherche avancee par filtres",
+   "description": "Automatise par tests/tc-hvc-2-recherche-avancee-filtres.spec.ts. Verifie l'exigence HVC-2.",
    "prerequisite": "",
    "importance": "MEDIUM",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-04 - Affichage des resultats en liste et sur la carte"
-   ],
+   "verifie": ["HVC-2 - Recherche avancee par filtres"],
    "steps": [
     {
-     "action": "Lancer une recherche sur la destination « Miami ».",
-     "expected_result": "La page de résultats s'affiche."
+     "action": "Ouvrir le panneau de recherche avancee et choisir des criteres (chambres, pieces, piscine).",
+     "expected_result": "Les criteres selectionnes sont pris en compte dans le panneau."
     },
     {
-     "action": "Observer la moitié gauche puis la moitié droite de la page.",
-     "expected_result": "Les logements apparaissent à la fois en liste (cartes avec photo, prix et adresse) et sur une carte interactive portant des marqueurs de prix."
+     "action": "Cliquer sur Appliquer des filtres.",
+     "expected_result": "La recherche est relancee avec les criteres choisis : l'URL contient search-results."
+    },
+    {
+     "action": "Revenir en arriere, rouvrir le panneau avance et cliquer sur Reinitialiser.",
+     "expected_result": "Tous les filtres avances sont vides, notamment la case piscine est decochee."
     }
    ]
   },
   {
-   "dossier": [
-    "Recherche de logement",
-    "Affichage"
-   ],
-   "reference": "CT-05",
-   "name": "CT-05 - Survoler une annonce et afficher sa fiche",
-   "description": "Vérifie l'exigence CA-05.",
+   "dossier": ["Recherche de logement"],
+   "reference": "TC-HVC-3",
+   "name": "TC-HVC-3 - Filtrage par equipements et installations",
+   "description": "Automatise par tests/tc-hvc-3-filtres-equipements.spec.ts. Verifie l'exigence HVC-3.",
+   "prerequisite": "",
+   "importance": "LOW",
+   "verifie": ["HVC-3 - Filtrage par equipements et installations"],
+   "steps": [
+    {
+     "action": "Cocher plusieurs equipements simultanement dans le panneau Avancee (ex : climatisation et piscine).",
+     "expected_result": "Les deux cases restent cochees en meme temps : cumul, pas exclusion."
+    },
+    {
+     "action": "Cliquer sur Appliquer des filtres.",
+     "expected_result": "La recherche est relancee avec les deux criteres choisis (presents dans les parametres de la requete)."
+    }
+   ]
+  },
+  {
+   "dossier": ["Recherche de logement"],
+   "reference": "TC-HVC-4",
+   "name": "TC-HVC-4 - Recherche avec ou sans animaux",
+   "description": "Automatise par tests/tc-hvc-4-recherche-animaux.spec.ts. Verifie l'exigence HVC-4.",
+   "prerequisite": "",
+   "importance": "LOW",
+   "verifie": ["HVC-4 - Recherche avec ou sans animaux"],
+   "steps": [
+    {
+     "action": "Dans le widget Voyageurs, choisir Oui puis Non pour Animaux domestiques.",
+     "expected_result": "Le choix est exclusif : selectionner Non desactive Oui (bouton radio)."
+    },
+    {
+     "action": "Choisir Oui, appliquer puis lancer la recherche.",
+     "expected_result": "Le resultat de recherche respecte ce filtre : le parametre pets=1 est present dans la requete."
+    }
+   ]
+  },
+  {
+   "dossier": ["Navigation"],
+   "reference": "TC-HVC-5",
+   "name": "TC-HVC-5 - Navigation par type de logement",
+   "description": "Automatise par tests/tc-hvc-5-navigation-type-logement.spec.ts. Verifie l'exigence HVC-5.",
    "prerequisite": "",
    "importance": "MEDIUM",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-05 - Survol d une annonce et fiche sur la carte"
-   ],
+   "verifie": ["HVC-5 - Navigation par type de logement"],
    "steps": [
     {
-     "action": "Lancer une recherche sur la destination « Miami ».",
-     "expected_result": "La page de résultats s'affiche, la carte est visible et aucune fiche n'y est ouverte."
-    },
-    {
-     "action": "Survoler la première annonce de la liste avec la souris, sans cliquer.",
-     "expected_result": "La carte se recentre sur le logement survolé et sa fiche s'ouvre sur la carte, portant l'adresse du logement."
-    }
-   ]
-  },
-  {
-   "dossier": [
-    "Recherche de logement",
-    "Destination"
-   ],
-   "reference": "CT-06",
-   "name": "CT-06 - Lancer une recherche sans destination",
-   "description": "Vérifie l'exigence CA-06.",
-   "prerequisite": "",
-   "importance": "HIGH",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-06 - Recherche refusee si la destination est vide"
-   ],
-   "steps": [
-    {
-     "action": "Ouvrir http://livraison3.testacademy.fr/ et laisser le champ Destination sur sa valeur par défaut, sans indiquer de destination.",
-     "expected_result": "Le bouton de la liste affiche « Destination »."
-    },
-    {
-     "action": "Cliquer sur Chercher.",
-     "expected_result": "Un message invite à renseigner une destination, et AUCUNE recherche n'est lancée : on reste sur la page d'accueil."
-    }
-   ]
-  },
-  {
-   "dossier": [
-    "Recherche de logement",
-    "Destination"
-   ],
-   "reference": "CT-07",
-   "name": "CT-07 - Rechercher une destination sans logement",
-   "description": "Vérifie l'exigence CA-07.",
-   "prerequisite": "",
-   "importance": "MEDIUM",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-07 - Aucun resultat si la destination n a aucun logement"
-   ],
-   "steps": [
-    {
-     "action": "Ouvrir la liste Destination et choisir « asdas ».",
-     "expected_result": "Le bouton de la liste affiche « asdas »."
-    },
-    {
-     "action": "Cliquer sur Chercher.",
-     "expected_result": "La page de résultats s'affiche, aucune annonce n'est listée, et le message « Nous n'avons trouvé aucun résultat » est visible."
-    }
-   ]
-  },
-  {
-   "dossier": [
-    "Recherche de logement",
-    "Dates"
-   ],
-   "reference": "CT-08",
-   "name": "CT-08 - Lancer une recherche avec une periode inversee",
-   "description": "Vérifie l'exigence CA-08.",
-   "prerequisite": "",
-   "importance": "HIGH",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-08 - Recherche refusee si la periode est invalide"
-   ],
-   "steps": [
-    {
-     "action": "Depuis la page d'accueil, indiquer « Miami » dans le champ Destination.",
-     "expected_result": "Le bouton de la liste affiche « Miami »."
-    },
-    {
-     "action": "Ouvrir le calendrier, sélectionner J+11 comme date de début, puis J+6 comme date de fin.",
-     "expected_result": "Un message d'erreur signale que la période est invalide."
-    },
-    {
-     "action": "Cliquer sur Chercher.",
-     "expected_result": "AUCUNE recherche n'est lancée : on reste sur la page d'accueil."
-    }
-   ]
-  },
-  {
-   "dossier": [
-    "Recherche de logement",
-    "Voyageurs"
-   ],
-   "reference": "CT-09",
-   "name": "CT-09 - Rechercher sans indiquer de voyageur",
-   "description": "Vérifie l'exigence CA-09.",
-   "prerequisite": "",
-   "importance": "MEDIUM",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-09 - Recherche sans voyageur indique"
-   ],
-   "steps": [
-    {
-     "action": "Depuis la page d'accueil, indiquer « Miami » dans le champ Destination et laisser le champ Voyageurs vide.",
-     "expected_result": "Le champ Voyageurs est vide."
-    },
-    {
-     "action": "Cliquer sur Chercher.",
-     "expected_result": "La page de résultats affiche TOUS les logements de la destination, sans filtre de capacité : le compteur est identique à celui d'une recherche sans voyageur indiqué."
-    }
-   ]
-  },
-  {
-   "dossier": [
-    "Recherche de logement",
-    "Dates"
-   ],
-   "reference": "CT-10",
-   "name": "CT-10 - Rechercher sur une periode sans disponibilite",
-   "description": "Vérifie l'exigence CA-10.",
-   "prerequisite": "",
-   "importance": "MEDIUM",
-   "status": "WORK_IN_PROGRESS",
-   "nature": "NAT_FUNCTIONAL_TESTING",
-   "type": "TYP_EVOLUTION_TESTING",
-   "verifie": [
-    "CA-10 - Aucun resultat pour la periode demandee"
-   ],
-   "steps": [
-    {
-     "action": "Ouvrir la liste Destination et choisir une ville ne comportant qu'une seule annonce.",
-     "expected_result": "Le bouton de la liste affiche la ville choisie."
-    },
-    {
-     "action": "Ouvrir le calendrier et sélectionner une période pendant laquelle cette annonce est indisponible.",
-     "expected_result": "Les champs Début et Fin affichent les deux dates."
-    },
-    {
-     "action": "Cliquer sur Chercher.",
-     "expected_result": "Aucune annonce n'est listée et un message indique qu'aucun logement n'est disponible."
+     "action": "Depuis la page d'accueil, cliquer sur une categorie de logement (Studio).",
+     "expected_result": "La page liste uniquement les logements du type selectionne : l'URL contient /type/studio."
     }
    ]
   }
