@@ -44,20 +44,20 @@ seul, sur l'application de votre choix.
   tel quel ("ça ne correspond pas à ce que j'attendais, voici pourquoi...") plutôt que de
   continuer : le module suivant suppose que l'étape précédente a réellement abouti.
 
-## Prérequis (détaillés au module 00)
+## Prérequis
 
 - Un ordinateur avec accès à Internet.
-- Claude Code installé et fonctionnel, **avec le connecteur Atlassian (Jira) activé** —
-  c'est ce qui permet à Claude de créer des tickets pour vous. Si vous ne savez pas si c'est
-  le cas, le module 00 vous dit comment vérifier.
-- Docker Desktop installé (pour héberger l'outil de gestion des tests).
-- Un compte Atlassian (gratuit) pour créer votre propre projet Jira.
+- Un compte Claude (Claude.ai / Anthropic) donnant accès à Claude Code.
+
+C'est tout. **Visual Studio Code, l'extension Claude Code, Docker Desktop et le connecteur
+Atlassian (Jira) ne sont pas supposés déjà installés** — le module 00 vous fait passer de
+zéro à un poste fonctionnel, clic par clic.
 
 ## Sommaire
 
 | Module | Contenu |
 |---|---|
-| [00 — Avant de commencer](modules/00-avant-de-commencer.md) | Vérifier les prérequis, rien à installer de notre part |
+| [00 — Avant de commencer](modules/00-avant-de-commencer.md) | Installer VS Code, Claude Code et Docker Desktop, de zéro |
 | [01 — Environnement Squash](modules/01-environnement-squash.md) | Démarrer votre outil de gestion des tests |
 | [02 — Explorer et proposer](modules/02-explorer-et-proposer.md) | Donner une URL, obtenir une proposition d'exigences |
 | [03 — Valider et créer le backlog](modules/03-valider-et-creer-le-backlog.md) | Corriger la proposition, créer le projet Jira et les exigences |
