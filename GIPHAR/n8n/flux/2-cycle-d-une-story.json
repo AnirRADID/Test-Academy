@@ -1547,53 +1547,6 @@
           },
           "conditions": [
             {
-              "id": "cf11a3e7-e0b1-4cd3-9c14-1f584bdf4fc0",
-              "leftValue": "={{ $('Réponse analyste').last().json.deja_approuve === true ? 'oui' : 'non' }}",
-              "rightValue": "oui",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "c7a3deff-5aa5-4d1a-a2dc-d7ce155a8cda",
-      "name": "Validation déjà acquise ?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1340,
-        112
-      ]
-    },
-    {
-      "id": "450a0577-e179-4481-8c61-bf34c7a4f998",
-      "name": "📓 Journal : validation déjà acquise",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
-      "position": [
-        2168,
-        -330
-      ],
-      "parameters": {
-        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"cas {{ $('Réponse analyste').last().json.reference_cas }} déjà approuvé et story inchangée : validation non redemandée\""
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
               "id": "be176641-cf46-41ad-a48f-57656f0be680",
               "leftValue": "={{ $json.statut }}",
               "rightValue": "arrete",
@@ -1765,6 +1718,94 @@
           "waitForSubWorkflow": true
         }
       }
+    },
+    {
+      "id": "ad846d69-2a03-40f3-be50-85abba0ab133",
+      "name": "🗂 Jira : retour colonne À faire",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4088,
+        600
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "À faire",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
     }
   ],
   "connections": {
@@ -1837,7 +1878,7 @@
       "main": [
         [
           {
-            "node": "Validation déjà acquise ?",
+            "node": "Jira : étiquette qa-a-valider",
             "type": "main",
             "index": 0
           }
@@ -2216,29 +2257,6 @@
         ]
       ]
     },
-    "Validation déjà acquise ?": {
-      "main": [
-        [
-          {
-            "node": "Jira : étiquette qa-en-cours",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "📓 Journal : validation déjà acquise",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Jira : étiquette qa-a-valider",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Cycle arrêté ?": {
       "main": [
         [
@@ -2278,6 +2296,17 @@
           },
           {
             "node": "🗂 Jira : bug en colonne Anomalies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📓 Journal : cycle arrêté": {
+      "main": [
+        [
+          {
+            "node": "🗂 Jira : retour colonne À faire",
             "type": "main",
             "index": 0
           }

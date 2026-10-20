@@ -49,11 +49,11 @@ testacademy.atlassian.net ».
    - le cas existe déjà et aucune remarque → ne rien recréer. Lire le cas
      (`lire-cas TC-<clé>`) et comparer la story lue dans Jira (titre, description, critères
      d'acceptation) avec l'exigence du fichier de données existant :
-     - cas au statut `APPROVED` **et** story inchangée → ne rien modifier dans Squash : la
-       validation humaine est déjà acquise (réponse avec `"deja_approuve": true`) ;
      - story modifiée → mettre à jour le fichier de données selon la nouvelle story, puis
        `modifier-cas <fichier>` (le cas repasse « À approuver ») ;
-     - story inchangée mais cas pas encore approuvé → `statut TC-<clé> A_APPROUVER`.
+     - story inchangée → `statut TC-<clé> A_APPROUVER`, sans toucher au contenu du cas.
+       Même si le cas était déjà approuvé : **un humain valide à chaque lancement**. Le
+       signaler dans la fiche (« cas inchangé depuis sa dernière approbation »).
 5. **Remplir la section 1** de la fiche (le cas en clair : nom, ce qu'il vérifie, la liste
    des pas). Section 2 : « En attente de validation » + le lien du formulaire. Mettre à jour
    « Où en est-on » (étape 2) et « Prochaine action ». Si c'est une correction, ajouter sous
@@ -61,16 +61,10 @@ testacademy.atlassian.net ».
 6. **Commenter la story Jira** avec le modèle « cas prêt à valider », en y mettant le lien
    du formulaire reçu.
 
-**Validation déjà acquise** (`deja_approuve`) : les étapes 5 et 6 changent. Section 2 de la
-fiche : « Cas déjà approuvé, story inchangée depuis : validation non redemandée (passage du
-<date>) » ; « Prochaine action » : « Automatisation du cas par l'agent automaticien ». Ne pas
-commenter la story Jira.
-
 ## Ta réponse finale
 
 Uniquement l'objet JSON décrit dans `competence-rediger-comptes-rendus` (section 5), avec en
-plus `"reference_cas"` (ex. `"TC-HVC-6"`), `"titre_story"` et `"deja_approuve"` (`true`
-seulement dans le cas ci-dessus, sinon `false`).
+plus `"reference_cas"` (ex. `"TC-HVC-6"`) et `"titre_story"`.
 
 ## Si tu es bloqué
 

@@ -55,7 +55,8 @@ toujours passer par n8n, sinon rien n'apparaît dans n8n ni dans le journal, et 
 À la demande de l'utilisateur (« mets en pause », « reprends », « arrête tout ») :
 `curl -s -X POST http://127.0.0.1:5680/pause` (ou `/reprendre`, `/arreter`), avec
 `-H "Content-Type: application/json" -d '{}'`. La pause laisse l'agent au travail finir son
-étape ; l'arrêt annule ce qui reste à faire dans le lancement en cours.
+étape ; l'arrêt annule ce qui reste à faire **et remet tout à zéro** : le tableau de la
+Tour est vidé et, dans Jira, ses stories reviennent dans « À faire » sans étiquette qa-*.
 
 ## Suivre
 
@@ -77,5 +78,5 @@ toujours passer par n8n, sinon rien n'apparaît dans n8n ni dans le journal, et 
 
 Même chose qu'un premier lancement (étape 4), ou bouton **↻ Relancer** sur la carte dans la
 Tour. n8n retire les anciennes étiquettes d'état et les agents reprennent ce qui existe déjà
-(cas Squash, test, fiche) sans doublon. Si le cas est déjà approuvé et que la story n'a pas
-changé dans Jira, la validation humaine n'est **pas** redemandée.
+(cas Squash, test, fiche) sans doublon. Chaque story relancée repasse par la validation
+humaine, même si son cas était déjà approuvé.

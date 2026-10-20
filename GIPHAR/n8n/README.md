@@ -9,7 +9,8 @@ outil gratuit qui affiche le travail sous forme de boîtes reliées entre elles.
 | `flux/1-lancer-des-stories.json` | Le flux « lancement » : reçoit de Claude la liste des stories à tester |
 | `flux/2-cycle-d-une-story.json` | Le flux « cycle » : fait travailler les 5 agents sur une story |
 | `flux/3-deplacer-le-ticket-dans-jira.json` | Fait passer le ticket d'une colonne à l'autre du tableau Jira, à chaque étape |
-| `flux/4-lister-les-stories.json` | Lit dans Jira les stories du sprint actif ou du backlog, pour le panneau « Lancer des tests » de la Tour |
+| `flux/4-lister-les-stories.json` | Lit dans Jira les stories du sprint actif ou du backlog, et les colonnes du tableau, pour le panneau « Lancer des tests » de la Tour |
+| `flux/5-remettre-a-zero.json` | Bouton « Arrêter » de la Tour : remet les stories du tableau dans « À faire » et retire leurs étiquettes qa-* |
 | `../supervision/` | La Tour de contrôle (http://localhost:5680), démarrée avec n8n |
 | `outils/lancer-agent.mjs` | Lance un agent pour n8n et raconte au journal chacune de ses actions |
 | `outils/ecrire-au-journal.mjs` | Ajoute une ligne au journal (utilisé par les boîtes 📓 de n8n) |
@@ -89,7 +90,7 @@ Répondre **oui** à la question « Do you trust the files in this folder? », p
 `/exit`. Sans cette étape, les agents lancés par n8n se voient refuser leurs actions et
 finissent « bloqués ».
 
-### 3. Importer les quatre flux
+### 3. Importer les cinq flux
 
 Toujours dans le terminal, depuis le dossier `GIPHAR` :
 
@@ -137,10 +138,10 @@ Dans le flux **1. Lancer des stories**, ouvrir la boîte **Réglages** :
 
 Faire de même dans la boîte **Story de test** du flux **2. Cycle d'une story**.
 
-### 7. Publier les quatre flux
+### 7. Publier les cinq flux
 
 Ouvrir chaque flux et cliquer sur le bouton **Publish** (*Publier*), en haut à droite.
-**Commencer par le flux 3**, puis le 2, le 4, et enfin le 1. Un flux non publié ne peut pas recevoir de
+**Commencer par le flux 3**, puis le 2, le 4, le 5, et enfin le 1. Un flux non publié ne peut pas recevoir de
 demande : n8n répondrait « Workflow is not active ». Après toute modification d'un flux,
 cliquer de nouveau sur **Publish**, sinon n8n continue d'utiliser l'ancienne version.
 
@@ -205,18 +206,22 @@ suivie est celle de la boîte **Réglages** du flux 1 (ou la variable `SQUASH_IT
 
 Rien ne démarre tout seul : c'est vous qui lancez, depuis la Tour de contrôle.
 
-- **▶ Lancer des tests** (barre du haut) : un panneau liste les stories lues dans Jira. Choisir
-  **le sprint actif**, **tout le backlog** ou **des stories choisies**, décocher au besoin,
-  puis **Démarrer**. Le panneau annonce avant le clic le nombre de validations à prévoir et le
-  coût approximatif. Pendant un lancement, le même bouton devient **＋ Ajouter des stories**.
-- Le Kanban ne montre que **le lancement en cours**. Les précédents sont listés dessous
-  (« Lancements précédents »).
+- **▶ Lancer des tests** (barre du haut) : le panneau demande d'abord **que tester** — le
+  sprint actif, tout le backlog ou des stories choisies —, puis liste les stories lues dans
+  Jira (décocher au besoin) et **Démarrer**. Il annonce avant le clic le nombre de validations
+  (une par story) et le coût approximatif.
+- Le tableau garde **toutes les stories lancées** depuis le dernier « Arrêter » : une story
+  traitée reste dans **Terminé** ou **Anomalies**, d'un lancement à l'autre. Un clic sur une
+  carte montre son **historique** (tout ce que les robots et vous avez fait, avec l'heure) et
+  sa fiche de suivi. Les lancements sont listés sous le tableau (« Historique des lancements »).
 - **⏸ Pause** : aucun robot ne démarre de nouvelle étape (ils dorment, « zZ »). Un robot déjà
   au travail **finit son étape** : le couper au milieu laisserait Jira ou Squash à moitié
   remplis. **▶ Reprendre** relance la suite.
-- **⏹ Arrêter** (avec confirmation) : les stories non terminées du lancement ne sont plus
-  traitées. Un cas qui attendait votre validation est refusé « pour arrêt », ce qui termine
-  proprement son cycle. Dans Jira, les étiquettes `qa-en-cours` / `qa-a-valider` sont retirées.
+- **⏹ Arrêter** (avec confirmation) : arrêt définitif et **remise à zéro**. Les stories non
+  terminées ne sont plus traitées (un cas qui attendait votre validation est refusé « pour
+  arrêt », ce qui termine proprement son cycle), la pause est levée, le tableau de la Tour est
+  vidé et, dans Jira, ses stories reviennent dans **À faire** sans étiquette `qa-*` (flux 5).
+  Les tickets Bug restent dans Anomalies : ce sont de vrais défauts.
 - **↻ Relancer** : sur chaque carte terminée, bloquée ou arrêtée.
 - **Vérification du tableau Jira** : à chaque ouverture du panneau « Lancer des tests », la
   Tour compare les colonnes du tableau Jira aux siennes (mêmes noms, même ordre). Au moindre
@@ -227,14 +232,15 @@ Rien ne démarre tout seul : c'est vous qui lancez, depuis la Tour de contrôle.
   Anomalies du tableau Jira.
 - **🖥 Exécution** : une petite fenêtre montre, en direct, l'écran du navigateur piloté par
   les tests Playwright (essai de l'automaticien ou campagne), le test et le pas en cours, et
-  l'avancement. Un point rouge sur le bouton signale qu'une exécution est en cours.
+  l'avancement. Elle **s'ouvre toute seule** dès qu'une exécution démarre (et se rouvre à la
+  suivante si vous l'avez fermée).
 
 > ⚠ **Ne redémarrez pas n8n pendant un lancement en cours, même en pause.** Les cycles des
 > stories qui ne sont pas en attente de votre validation seraient perdus : il faudrait les
 > relancer (↻ Relancer). Les validations en attente, elles, survivent à un redémarrage.
 > Pour redémarrer sans risque : attendre la fin du lancement, ou l'arrêter d'abord.
-- **Validation déjà acquise** : si le cas d'une story relancée est déjà approuvé et que la
-  story n'a pas changé dans Jira, l'analyste ne vous redemande pas de validation.
+- **Validation** : chaque story lancée passe par « À valider » et attend votre décision, même
+  si son cas était déjà approuvé lors d'un lancement précédent.
 
 ### Lancer depuis la conversation
 

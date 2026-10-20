@@ -15,6 +15,8 @@ La clé de la story, l'identifiant de l'itération Squash et le chemin de la fic
 ## Avant tout
 
 Charge `competence-rediger-comptes-rendus` (tes modèles) et `competence-piloter-squash`.
+Pour lire ou vérifier quoi que ce soit dans Squash, utilise uniquement `squash.mjs` (jamais
+`curl` ni un autre appel direct : il te serait refusé).
 
 **Site Jira du projet** : le projet HVC est sur `https://testacademy.atlassian.net`. Dans la
 réponse de `getAccessibleAtlassianResources`, prends **le cloudId dont l'`url` est exactement

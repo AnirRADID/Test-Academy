@@ -85,7 +85,7 @@ const AGENTS = [
 ];
 // Apres le travail d'un agent, la story passe a la colonne suivante.
 const APRES = {
-  'agent-analyste': 'a-valider', 'agent-automaticien': 'executant', 'agent-executant': 'anomalies',
+  'agent-analyste': 'analyste', 'agent-automaticien': 'executant', 'agent-executant': 'anomalies',
   'agent-gestionnaire-anomalies': 'rapporteur', 'agent-rapporteur': 'rapporteur',
 };
 const colonneDeLAgent = Object.fromEntries(COLONNES.filter(c => c.agent).map(c => [c.agent, c.id]));
@@ -239,13 +239,25 @@ const ecrireLancements = (l) => writeFileSync(LANCEMENTS, JSON.stringify(l, null
 const lireArret = () => { try { return JSON.parse(lire(ARRET)).cles || []; } catch { return []; } };
 const noterAuJournal = (quoi, story = '—') => { try { ecrire(story, 'vous', quoi); } catch { /* le journal ne bloque rien */ } };
 
-// Le lancement en cours est le dernier. Sans fichier de lancements (stories lancees avant
-// cette version de la Tour), on part de la derniere demande recue dans le journal.
+// Le tableau de la Tour : toutes les stories lancees depuis le dernier « Arrêter » (qui remet
+// tout a zero). Une story terminee y reste, dans Terminé ou Anomalies, d'un lancement a
+// l'autre. Sans fichier de lancements (stories lancees avant cette version de la Tour), on
+// part de la derniere demande recue dans le journal.
 function lancementCourant(evenements) {
-  const l = lireLancements().at(-1);
-  if (l) return l;
-  const ev = evenements.findLast(e => e.qui === 'n8n' && /demande reçue/.test(e.quoi));
-  return ev ? { n: 0, debut: null, portee: 'choix', cles: [], apres: ev.n, implicite: true } : null;
+  const tous = lireLancements();
+  if (!tous.length) {
+    const ev = evenements.findLast(e => e.qui === 'n8n' && /demande reçue/.test(e.quoi));
+    return ev ? { n: 0, debut: null, portee: 'choix', cles: [], titres: {}, apres: ev.n, implicite: true, nbLancements: 1 } : null;
+  }
+  const actifs = tous.slice(tous.findLastIndex(l => l.arreteLe) + 1);
+  if (!actifs.length) return null;
+  const dernier = actifs.at(-1);
+  return {
+    n: dernier.n, debut: dernier.debut, portee: dernier.portee,
+    debutTableau: actifs[0].debut, apres: actifs[0].apres, nbLancements: actifs.length,
+    cles: [...new Set(actifs.flatMap(l => l.cles))],
+    titres: Object.assign({}, ...actifs.map(l => l.titres || {})),
+  };
 }
 
 function etat() {
@@ -303,12 +315,9 @@ function etat() {
     s.dansLancement = membres.has(s.cle);
     s.bugs = Object.values(bugsParStory[s.cle] || {});
     if (!s.dansLancement) { s.colonne = null; s.fini = false; }
-    else {
-      s.colonne ??= 'a-faire';
-      if (lancement.arreteLe && !s.fini) s.arretee = true;
-    }
-    // Le resultat Squash ne compte pour le Kanban que s'il date de ce lancement.
-    s.resultatDuLancement = s.dansLancement && s.resultat && (!lancement.debut || (s.joueLe && s.joueLe >= lancement.debut)) ? s.resultat : null;
+    else s.colonne ??= 'a-faire';
+    // Le resultat Squash ne compte pour le Kanban que s'il date du tableau en cours.
+    s.resultatDuLancement = s.dansLancement && s.resultat && (!lancement.debutTableau || (s.joueLe && s.joueLe >= lancement.debutTableau)) ? s.resultat : null;
     const enTravail = s.dansLancement && verrou && verrou.story?.includes(`(${s.cle})`);
     s.travail = enTravail ? { agent: verrou.agent, depuis: verrou.depuis } : null;
     if (enTravail) {
@@ -341,14 +350,14 @@ function etat() {
   // --- le lancement en cours et les precedents ------------------------------------------
   const resume = lancement && {
     n: lancement.n, debut: lancement.debut, portee: lancement.portee, implicite: !!lancement.implicite,
-    arreteLe: lancement.arreteLe || null, nb: duLancement.length,
+    debutTableau: lancement.debutTableau || null, nbLancements: lancement.nbLancements, nb: duLancement.length,
     termines: duLancement.filter(s => s.fini).length,
     avecAnomalies: duLancement.filter(s => s.fini && s.colonne === 'anomalies').length,
     reussis: duLancement.filter(s => s.resultatDuLancement === 'reussi').length,
     echoues: duLancement.filter(s => s.resultatDuLancement === 'echoue').length,
     fini: duLancement.length > 0 && duLancement.every(s => s.fini || s.arretee),
   };
-  const historique = lireLancements().slice(0, -1).slice(-5).reverse()
+  const historique = lireLancements().slice(-8).reverse()
     .map(l => ({ n: l.n, debut: l.debut, portee: l.portee, nb: l.cles.length, arreteLe: l.arreteLe || null }));
 
   // --- les bugs signales (fiches de suivi, section 5) -------------------------------
@@ -457,8 +466,7 @@ async function listerStories(portee) {
     s.resultat = connue?.resultat || null;
     s.joueLe = connue?.joueLe || null;
     // « deja en cours » : dans le lancement en cours, ni terminee, ni bloquee, ni arretee.
-    s.dansLancement = !!connue?.dansLancement && !connue.fini && !connue.bloque && !connue.arretee
-      && !e.lancement?.fini && !e.lancement?.arreteLe;
+    s.dansLancement = !!connue?.dansLancement && !connue.fini && !connue.bloque && !connue.arretee;
   }
   return donnees;
 }
@@ -489,9 +497,9 @@ async function lancer({ portee, cles, titres }) {
   cles = [...new Set((cles || []).map(c => String(c).trim().toUpperCase()).filter(c => /^[A-Z][A-Z0-9]+-\d+$/.test(c)))];
   if (!cles.length) throw new Error('Choisissez au moins une story.');
   const e = etat();
-  const enCours = e.lancement && !e.lancement.implicite && !e.lancement.fini && !e.lancement.arreteLe;
-  const dejaEnRoute = enCours ? cles.filter(c => { const s = e.stories.find(x => x.cle === c);
-    return s?.dansLancement && !s.fini && !s.arretee && !s.bloque; }) : [];
+  const surLeTableau = !!e.lancement && !e.lancement.implicite;
+  const dejaEnRoute = cles.filter(c => { const s = e.stories.find(x => x.cle === c);
+    return s?.dansLancement && !s.fini && !s.arretee && !s.bloque; });
   if (dejaEnRoute.length) throw new Error(`Déjà en cours dans ce lancement : ${dejaEnRoute.join(', ')}.`);
 
   // Le lancement commence ici : n8n ecrit au journal des qu'il recoit la demande.
@@ -513,19 +521,11 @@ async function lancer({ portee, cles, titres }) {
 
   const lancements = lireLancements();
   const t = Object.fromEntries(Object.entries(titres || {}).filter(([c]) => cles.includes(c)).map(([c, v]) => [c, String(v).slice(0, 200)]));
-  let l;
-  if (enCours) {
-    l = lancements.at(-1);
-    l.cles.push(...cles.filter(c => !l.cles.includes(c)));
-    l.titres = { ...l.titres, ...t };
-    noterAuJournal(`➕ ajouté au lancement n° ${l.n} : ${cles.join(', ')}`);
-  } else {
-    l = { n: (lancements.at(-1)?.n || 0) + 1, debut: new Date().toISOString(), portee, cles, titres: t, apres: nbEvenements };
-    lancements.push(l);
-    noterAuJournal(`🚀 lancement n° ${l.n} (${PORTEES[portee]}) : ${cles.join(', ')}`); // 1re ligne du lancement
-  }
+  const l = { n: (lancements.at(-1)?.n || 0) + 1, debut: new Date().toISOString(), portee, cles, titres: t, apres: nbEvenements };
+  lancements.push(l);
   ecrireLancements(lancements);
-  return { n: l.n, ajoute: !!enCours, cles };
+  noterAuJournal(`🚀 lancement n° ${l.n} (${PORTEES[portee]}) : ${cles.join(', ')}`);
+  return { n: l.n, ajoute: surLeTableau, cles };
 }
 
 function mettreEnPause() {
@@ -539,23 +539,42 @@ function reprendre() {
   noterAuJournal('▶ reprise demandée : les agents repartent');
 }
 
-// Arreter le lancement : les agents ne demarrent plus rien pour ses stories ; un cas qui
-// attend votre validation est refuse « pour arret », ce qui termine proprement son cycle.
+// Arreter = tout remettre a zero :
+//  - les agents ne demarrent plus rien pour les stories non terminees (un agent deja au
+//    travail finit son etape) ; un cas qui attend votre validation est refuse « pour arret »,
+//    ce qui termine proprement son cycle ;
+//  - la pause est levee et le tableau de la Tour est vide ;
+//  - dans Jira, les stories du tableau perdent leurs etiquettes qa-* et reviennent dans
+//    « À faire » (flux n8n 5). Les tickets Bug ne sont pas touches.
 async function arreter() {
   const e = etat();
-  if (!e.lancement || e.lancement.implicite || e.lancement.fini || e.lancement.arreteLe) throw new Error('Aucun lancement en cours.');
-  const restantes = e.stories.filter(s => s.dansLancement && !s.fini);
-  writeFileSync(ARRET, JSON.stringify({ cles: [...new Set([...lireArret(), ...restantes.map(s => s.cle)])] }));
+  if (!e.lancement || e.lancement.implicite) throw new Error('Le tableau est déjà vide.');
+  const duTableau = e.stories.filter(s => s.dansLancement);
+  const restantes = duTableau.filter(s => !s.fini);
+  if (restantes.length) writeFileSync(ARRET, JSON.stringify({ cles: [...new Set([...lireArret(), ...restantes.map(s => s.cle)])] }));
   const lancements = lireLancements();
   lancements.at(-1).arreteLe = new Date().toISOString();
   ecrireLancements(lancements);
-  noterAuJournal(`⏹ lancement n° ${e.lancement.n} arrêté : ${restantes.map(s => s.cle).join(', ') || 'plus rien à faire'}`);
+  if (existsSync(PAUSE)) unlinkSync(PAUSE);
+  noterAuJournal(`⏹ arrêt et remise à zéro : ${duTableau.map(s => s.cle).join(', ')}${restantes.length ? ` (non terminées : ${restantes.map(s => s.cle).join(', ')})` : ''}`);
   const nonJoints = [];
   for (const s of restantes.filter(x => x.colonne === 'a-valider' && x.lienValidation)) {
     try { await envoyerAuFormulaire(s.lienValidation, 'Refuser', 'Lancement arrêté depuis la Tour de contrôle.'); }
     catch { nonJoints.push(s.cle); }
   }
-  return { arretees: restantes.map(s => s.cle), nonJoints };
+  let jira = true;
+  try {
+    const r = await fetch(`${N8N}/webhook/qa-homey-remettre-a-zero`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stories: duTableau.map(s => ({ cle: s.cle, titre: s.titre })) }), signal: AbortSignal.timeout(20000) });
+    jira = r.ok;
+  } catch { jira = false; }
+  return { arretees: restantes.map(s => s.cle), remisesAZero: duTableau.map(s => s.cle), nonJoints, jira };
+}
+
+// L'historique d'une story : tout ce que le journal raconte d'elle, du plus ancien au plus recent.
+function historiqueDe(cle) {
+  return lireJournal().filter(e => e.cle === cle && !e.story?.startsWith('🐞'))
+    .map(e => ({ date: e.date, heure: e.heure, qui: e.qui, quoi: e.quoi }));
 }
 
 /* ------------------------------------------- l'execution Playwright, en direct */
@@ -685,6 +704,7 @@ const serveur = http.createServer(async (req, res) => {
       return f ? repondre(res, 200, 'text/plain', lire(join(SUIVI, f.fichier)))
                : repondre(res, 404, 'text/plain', 'Pas encore de fiche de suivi pour cette story.');
     }
+    if (url.pathname === '/historique') return json(res, 200, historiqueDe(url.searchParams.get('cle')));
     if (url.pathname === '/execution') return json(res, 200, lireExecution() || { enCours: false, jamais: true });
     if (url.pathname === '/execution/ecran') {
       try {

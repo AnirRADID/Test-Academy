@@ -33,6 +33,7 @@
   --none:#3a4456; --claude:#e98a66; --claude-bg:#3a241c; color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45}
 .page{padding-inline:16px;padding-block:16px 40px;max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
 h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
@@ -247,6 +248,17 @@ button:disabled{opacity:.5;cursor:default}
 .choix-stories .der{font-size:12px;color:var(--muted);white-space:nowrap}
 .choix-stories .der.good{color:var(--good)} .choix-stories .der.crit{color:var(--crit)}
 .estimation{font-size:13px;color:var(--muted)}
+.question{margin:0 0 8px;font-family:var(--display);font-weight:700;font-size:16px}
+.portees{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+.portee{align-items:flex-start}
+.portee span{display:flex;flex-direction:column;gap:2px}
+.portee small{font-weight:400;color:var(--muted);font-size:12px}
+.chrono{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column}
+.chrono li{display:grid;grid-template-columns:26px 44px 1fr;gap:8px;align-items:start;padding:6px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.chrono li svg{width:24px;height:24px}
+.chrono li time{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:3px}
+.chrono li.jour{display:block;border:0;padding:12px 0 4px;font-family:var(--display);font-weight:700;color:var(--muted);font-size:12.5px;letter-spacing:.06em}
+.chrono li.ok{background:var(--good-bg)} .chrono li.ko{background:var(--crit-bg)} .chrono li.bug{background:var(--exe-pale)}
 .verif{border-radius:10px;padding:9px 12px;font-size:13px;margin:0}
 .verif.ok{background:var(--good-bg);color:var(--good);font-weight:600}
 .verif.ko{background:var(--crit-bg);color:var(--crit);display:flex;flex-direction:column;gap:2px}
@@ -489,7 +501,7 @@ function choisirOnglet(qui) {
 /* ---------- Kanban ---------- */
 function carte(s, kind) {
   const cls = [kind, s.travail ? 'working' : '', s.bloque ? 'blocked' : '', s.arretee ? 'stopped' : ''].join(' ');
-  let h = `<article class="card ${cls}" data-fiche="${esc(s.cle)}" tabindex="0" title="Ouvrir la fiche de suivi"><span class="key">${esc(s.cle)}</span><span class="title">${esc(s.titre)}</span>`;
+  let h = `<article class="card ${cls}" data-fiche="${esc(s.cle)}" tabindex="0" title="Voir l’historique de la story"><span class="key">${esc(s.cle)}</span><span class="title">${esc(s.titre)}</span>`;
   if (s.travail) h += `<span class="meta">${esc(s.travail.action)}</span><span class="meta" data-depuis="${esc(s.travail.depuis)}">⏱ ${fmtDuree(Date.now() - new Date(s.travail.depuis))}</span>`;
   else if (s.arretee) h += `<span class="chip wait">⏹ arrêtée</span>`;
   else if (s.bloque) h += `<span class="banner">🛑 Bloqué${s.raison ? ` : ${esc(s.raison)}` : ''}</span>`;
@@ -526,33 +538,31 @@ function renderKanban() {
       <div class="col-body">${ici.length ? ici.map(s => carte(s, kind)).join('') : `<p class="empty">Rien pour l'instant</p>`}</div></section>`;
   }).join(''));
   const L = E.lancement;
-  zone('board-count', L.implicite ? `${L.nb} stor${L.nb > 1 ? 'ies' : 'y'}`
-    : `Lancement n° ${L.n} · ${PORTEES[L.portee]} · ${L.nb} stor${L.nb > 1 ? 'ies' : 'y'}`);
+  zone('board-count', `${L.nb} stor${L.nb > 1 ? 'ies' : 'y'}${L.nbLancements > 1 ? ` · ${L.nbLancements} lancements` : ''}${L.debutTableau ? ` depuis le ${dateHeure(L.debutTableau)}` : ''}`);
 }
 
 /* ---------- pilotage : lancement, pause, arrêt ---------- */
 const PORTEES = { choix: 'stories choisies', sprint: 'sprint actif', backlog: 'tout le backlog' };
 let confirmerArret = false;
 function renderPilotage() {
-  const L = E.lancement, enCours = L && !L.implicite && !L.fini && !L.arreteLe;
+  const L = E.lancement, surTableau = L && !L.implicite, enCours = L && !L.fini;
+  const pl = (n, mot) => `${n} ${mot}${n > 1 ? 's' : ''}`;
   let etatTxt;
-  if (!L) etatTxt = '<b>Aucun lancement</b> · les robots attendent vos instructions';
-  else if (L.arreteLe) etatTxt = `<b>Lancement n° ${L.n} arrêté</b> à ${heure(L.arreteLe)} · ${L.termines}/${L.nb} stories terminées`;
-  else if (L.fini) etatTxt = `<b>Lancement${L.n ? ` n° ${L.n}` : ''} terminé</b> · ${L.nb} stor${L.nb > 1 ? 'ies' : 'y'} · ${L.nb - L.avecAnomalies} sans anomalie, ${L.avecAnomalies} avec anomalies`;
-  else etatTxt = `<b>Lancement${L.n ? ` n° ${L.n}` : ''} en cours</b>${L.debut ? ` depuis ${heure(L.debut)}` : ''} · ${PORTEES[L.portee]} · ${L.termines}/${L.nb} stories terminées`;
+  if (!L) etatTxt = '<b>Tableau vide</b> · les robots attendent vos instructions';
+  else etatTxt = `<b>${L.fini ? 'Tout est traité' : 'Travail en cours'}</b> · ${L.nb} stor${L.nb > 1 ? 'ies' : 'y'} sur le tableau · ${pl(L.termines, 'terminée')}${L.avecAnomalies ? ` (dont ${L.avecAnomalies} avec anomalies)` : ''}${L.n ? ` · dernier lancement n° ${L.n} à ${heure(L.debut)}` : ''}`;
   const bandeau = E.pause ? `<div class="pause-band">💤 <b>En pause</b> depuis ${heure(E.pause.depuis)} : aucun robot ne démarre de nouvelle étape. Un robot déjà au travail finit la sienne.</div>` : '';
   const pause = E.pause ? `<button class="btn btn-good" data-reprendre>▶ Reprendre</button>`
-    : `<button class="btn btn-ghost" data-pause ${enCours ? '' : 'disabled title="Aucun lancement en cours"'}>⏸ Pause</button>`;
-  const arret = !enCours ? '' : confirmerArret
-    ? `<span class="confirm">Arrêter ? Les stories non terminées ne seront plus traitées. <button class="btn btn-crit small" data-arreter-oui>Oui, arrêter</button> <button class="btn btn-ghost small" data-arreter-non>Annuler</button></span>`
-    : `<button class="btn btn-crit" data-arreter>⏹ Arrêter</button>`;
-  const lancer = `<button class="btn btn-primary" data-ouvrir-lancement>${enCours ? '＋ Ajouter des stories' : '▶ Lancer des tests'}</button>`;
+    : `<button class="btn btn-ghost" data-pause ${enCours ? '' : 'disabled title="Rien en cours"'}>⏸ Pause</button>`;
+  const arret = !surTableau ? '' : confirmerArret
+    ? `<span class="confirm">Tout arrêter et remettre à zéro ? Le tableau sera vidé et, dans Jira, ses stories reviendront dans « À faire ». <button class="btn btn-crit small" data-arreter-oui>Oui, tout remettre à zéro</button> <button class="btn btn-ghost small" data-arreter-non>Annuler</button></span>`
+    : `<button class="btn btn-crit" data-arreter title="Arrêter définitivement et tout remettre à zéro">⏹ Arrêter</button>`;
+  const lancer = `<button class="btn btn-primary" data-ouvrir-lancement>${surTableau ? '＋ Lancer d’autres tests' : '▶ Lancer des tests'}</button>`;
   const exe = `<button class="btn btn-ghost" data-execution title="Voir le navigateur piloté par les tests">🖥 Exécution${execEnCours ? ' <i class="point-direct"></i>' : ''}</button>`;
   zone('pilotage', `<div class="pilotage"><div class="etat-lancement">${etatTxt}</div><div class="actions">${exe}${pause}${arret}${lancer}</div></div>${bandeau}`);
 }
 function renderHistorique() {
-  zone('historique', E.historique.length ? `<details class="histo"><summary>Lancements précédents (${E.historique.length})</summary><ul>${E.historique.map(l =>
-    `<li><b>n° ${l.n}</b> · ${dateHeure(l.debut)} · ${PORTEES[l.portee] || ''} · ${l.nb} stor${l.nb > 1 ? 'ies' : 'y'}${l.arreteLe ? ' · arrêté' : ''}</li>`).join('')}</ul></details>` : '');
+  zone('historique', E.historique.length ? `<details class="histo"><summary>Historique des lancements (${E.historique.length})</summary><ul>${E.historique.map(l =>
+    `<li><b>n° ${l.n}</b> · ${dateHeure(l.debut)} · ${PORTEES[l.portee] || ''} · ${l.nb} stor${l.nb > 1 ? 'ies' : 'y'}${l.arreteLe ? ` · arrêté et remis à zéro le ${dateHeure(l.arreteLe)}` : ''}</li>`).join('')}</ul></details>` : '');
 }
 async function action(chemin, corps = {}) {
   const r = await fetch(chemin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) });
@@ -569,16 +579,17 @@ async function piloter(chemin, message, corps) {
 /* ---------- panneau « Lancer des tests » ---------- */
 let listeLancement = { portee: 'sprint', stories: [], coches: new Set(), erreur: null };
 function ouvrirLancement() {
+  listeLancement = { portee: null, stories: [], coches: new Set(), erreur: null };
   ouvrirTiroir(`<div class="d-head">${iconTower()}<div><h3 id="d-title">Lancer des tests</h3><p>Les stories sont lues dans votre Jira. Rien ne démarre avant votre clic sur « Démarrer ».</p></div><button class="d-close" id="d-close" aria-label="Fermer">×</button></div>
-    <div class="d-body"><div class="portees" role="radiogroup" aria-label="Quoi tester">
-      ${['sprint', 'backlog', 'choix'].map(p => `<label class="portee"><input type="radio" name="portee" value="${p}" ${p === listeLancement.portee ? 'checked' : ''}> ${{ sprint: 'Le sprint actif', backlog: 'Tout le backlog', choix: 'Des stories choisies' }[p]}</label>`).join('')}
+    <div class="d-body"><p class="question">Que voulez-vous tester ?</p><div class="portees" role="radiogroup" aria-label="Que voulez-vous tester ?">
+      ${[['sprint', 'Le sprint actif', 'Toutes les stories du sprint en cours'], ['backlog', 'Tout le backlog', 'Toutes les stories du projet'], ['choix', 'Des stories choisies', 'Vous cochez celles à tester']].map(([v, t, d]) =>
+        `<label class="portee"><input type="radio" name="portee" value="${v}"><span><b>${t}</b><small>${d}</small></span></label>`).join('')}
     </div><div id="liste-stories"></div></div>
-    <div class="d-foot"><div class="estimation" id="estimation"></div><div class="err" id="err" role="alert"></div>
+    <div class="d-foot"><div class="estimation" id="estimation">Choisissez d'abord ce que vous voulez tester.</div><div class="err" id="err" role="alert"></div>
       <div class="d-actions"><button class="btn btn-ghost" id="annuler-lancement">Annuler</button><button class="btn btn-primary" id="demarrer" disabled>▶ Démarrer</button></div></div>`);
   $('annuler-lancement').onclick = fermerTiroir;
   $('demarrer').onclick = demarrer;
   document.querySelectorAll('input[name=portee]').forEach(r => { r.onchange = () => chargerListe(r.value); });
-  chargerListe(listeLancement.portee);
 }
 async function chargerListe(portee) {
   listeLancement = { portee, stories: [], coches: new Set(), erreur: null };
@@ -622,7 +633,8 @@ function majEstimation() {
   if (!$('demarrer')) return;
   const tableauOk = listeLancement.verification?.ok === true;
   $('demarrer').disabled = !n || !tableauOk;
-  $('estimation').innerHTML = n ? `<b>${n} stor${n > 1 ? 'ies' : 'y'}</b> · jusqu'à ${n} validation${n > 1 ? 's' : ''} à faire (aucune pour un cas déjà approuvé dont la story n'a pas changé) · environ ${2 * n} à ${4 * n} $ de Claude · les robots travaillent l'un après l'autre`
+  $('estimation').innerHTML = !listeLancement.portee ? "Choisissez d'abord ce que vous voulez tester."
+    : n ? `<b>${n} stor${n > 1 ? 'ies' : 'y'}</b> · ${n} validation${n > 1 ? 's' : ''} à faire (une par story) · environ ${2 * n} à ${4 * n} $ de Claude · les robots travaillent l'un après l'autre`
     : 'Cochez au moins une story.';
 }
 async function demarrer() {
@@ -716,12 +728,33 @@ async function decider(cle, decision) {
     toast(decision === 'Approuver' ? 'Cas approuvé · le Robot Automaticien prendra le relais à son tour' : 'Cas refusé · renvoyé au Robot Analyste avec vos remarques');
   } catch (e) { err.textContent = e.message; $('approve').disabled = $('refuse').disabled = false; }
 }
-async function ouvrirFiche(cle) {
+const QUI = { vous: ['hum', 'Vous'], n8n: ['tour', 'n8n'] };
+async function ouvrirFiche(cle, vue = 'historique') {
   const s = E.stories.find(x => x.cle === cle);
   ouvrirTiroir(`<div class="d-head">${iconTodo()}<div><h3 id="d-title">${esc(s?.titre || cle)}</h3><p><a href="${esc(s?.lienJira || '#')}" target="_blank" rel="noopener">${esc(cle)} dans Jira</a>${s?.prochaineAction ? ` · prochaine action : ${esc(s.prochaineAction)}` : ''}</p></div><button class="d-close" id="d-close" aria-label="Fermer">×</button></div>
-    <div class="d-body"><pre class="fiche" id="fiche">Chargement…</pre></div>`);
-  try { const r = await fetch(`/fiche?cle=${encodeURIComponent(cle)}`); $('fiche').textContent = await r.text(); }
-  catch { $('fiche').textContent = 'Impossible de lire la fiche.'; }
+    <div class="d-body"><div class="tabs" role="tablist"><button class="tab" role="tab" data-vue="historique" aria-selected="${vue === 'historique'}">Historique</button><button class="tab" role="tab" data-vue="fiche" aria-selected="${vue === 'fiche'}">Fiche de suivi</button></div>
+    <div id="vue-story"><div class="thinking"><span class="dots"><i></i><i></i><i></i></span>Chargement…</div></div></div>`);
+  document.querySelectorAll('#drawer [data-vue]').forEach(b => { b.onclick = () => ouvrirFiche(cle, b.dataset.vue); });
+  try {
+    if (vue === 'fiche') {
+      const r = await fetch(`/fiche?cle=${encodeURIComponent(cle)}`);
+      $('vue-story').innerHTML = `<pre class="fiche"></pre>`; $('vue-story').firstChild.textContent = await r.text();
+      return;
+    }
+    const h = await (await fetch(`/historique?cle=${encodeURIComponent(cle)}`)).json();
+    if (!h.length) { $('vue-story').innerHTML = `<p class="vide">Rien n'a encore été fait sur cette story.</p>`; return; }
+    let jour = null, html = '<ol class="chrono">';
+    for (const e of h) {
+      if (e.date !== jour) { jour = e.date; html += `<li class="jour">${esc(e.date)}</li>`; }
+      const role = ROLE_DE[e.qui], vous = e.qui === 'vous' || (e.qui === 'n8n' && /APPROUVÉ par|REFUSÉ par/.test(e.quoi));
+      const ic = vous ? iconHuman() : role ? robot(role, 'on') : iconTower();
+      const nom = vous ? 'Vous' : role ? ROLES[role].short : e.qui;
+      const ton = /^✅|cycle terminé/.test(e.quoi) ? 'ok' : /^🛑|^⚠|cycle interrompu/.test(e.quoi) ? 'ko' : /^🐞/.test(e.quoi) ? 'bug' : '';
+      html += `<li class="${ton}">${ic}<time>${esc(e.heure)}</time><div><b>${esc(nom)}</b> ${esc(e.quoi)}</div></li>`;
+    }
+    $('vue-story').innerHTML = html + '</ol>';
+    $('vue-story').querySelector('.chrono li:last-child')?.scrollIntoView({ block: 'end' });
+  } catch { $('vue-story').innerHTML = `<p class="err-box">Impossible de lire l'historique.</p>`; }
 }
 function toast(t, erreur = false) {
   const el = $('toast'); el.textContent = t; el.classList.toggle('erreur', erreur); el.classList.add('show');
@@ -741,7 +774,7 @@ document.addEventListener('click', (e) => {
   if (e.target.closest('[data-reprendre]')) return piloter('/reprendre', 'Reprise : les robots repartent');
   if (e.target.closest('[data-arreter]')) { confirmerArret = true; vus.pilotage = null; return renderPilotage(); }
   if (e.target.closest('[data-arreter-non]')) { confirmerArret = false; vus.pilotage = null; return renderPilotage(); }
-  if (e.target.closest('[data-arreter-oui]')) return piloter('/arreter', j => `Lancement arrêté${j.arretees.length ? ` : ${j.arretees.join(', ')}` : ''}${j.nonJoints.length ? `. n8n n'a pas répondu pour ${j.nonJoints.join(', ')}` : ''}`);
+  if (e.target.closest('[data-arreter-oui]')) return piloter('/arreter', j => `Tout est remis à zéro${j.remisesAZero.length ? ` (${j.remisesAZero.join(', ')})` : ''}${j.jira ? '' : ". ⚠ Jira n'a pas pu être remis à zéro : le flux n8n 5 est-il publié ?"}${j.nonJoints.length ? `. n8n n'a pas répondu pour ${j.nonJoints.join(', ')}` : ''}`);
   if (e.target.closest('[data-analyse]')) return demanderAnalyse();
   const f = e.target.closest('[data-f]'); if (f) { filtre = f.dataset.f; renderFiltres(); renderJournal(); return; }
   const c = e.target.closest('[data-fiche]'); if (c) return ouvrirFiche(c.dataset.fiche);
@@ -757,7 +790,9 @@ try { if (localStorage.getItem('tour-onglet') === 'c') choisirOnglet('c'); } cat
 
 /* ---------- fenêtre « Exécution » : le navigateur piloté par les tests, en direct ---------- */
 let execEnCours = false, fenetreOuverte = false, minuteurExe = null;
+let executionFermee = null, derniereExecution = null;
 function basculerExecution(ouvrir = !fenetreOuverte) {
+  if (!ouvrir) executionFermee = derniereExecution;
   fenetreOuverte = ouvrir;
   $('fenetre-exe').hidden = !ouvrir;
   clearInterval(minuteurExe);
@@ -766,9 +801,13 @@ function basculerExecution(ouvrir = !fenetreOuverte) {
 async function majExecution() {
   let x;
   try { x = await (await fetch('/execution', { cache: 'no-store' })).json(); } catch { return; }
+  derniereExecution = x.enCours ? x.debut : derniereExecution;
   const avant = execEnCours;
   execEnCours = !!x.enCours;
   if (avant !== execEnCours && E) { vus.pilotage = null; renderPilotage(); }
+  // Une nouvelle exécution démarre : la fenêtre s'ouvre toute seule (sauf si vous l'avez
+  // fermée pendant cette même exécution).
+  if (x.enCours && !fenetreOuverte && x.debut !== executionFermee) return basculerExecution(true);
   if (!fenetreOuverte) return;
   const fini = x.reussis + x.echoues;
   $('fx-resume').textContent = x.jamais ? '' : `${x.origine === 'campagne' ? 'Campagne (résultats envoyés à Squash)' : "Essai de l'automaticien"} · ${fini}/${x.total} tests`;
@@ -802,7 +841,7 @@ async function majExecution() {
   }
 }
 // Le point rouge du bouton « Exécution » : vérifié toutes les 5 secondes, fenêtre fermée.
-setInterval(() => { if (!fenetreOuverte) majExecution(); }, 5000);
+setInterval(() => { if (!fenetreOuverte) majExecution(); }, 2000);
 
 /* ---------- boucle ---------- */
 async function rafraichir() {

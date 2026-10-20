@@ -1,0 +1,260 @@
+{
+  "id": "QaHomeyRemiseZro",
+  "name": "QA Homey - 5. Remettre à zéro",
+  "nodes": [
+    {
+      "id": "8f850bb0-a41c-4d52-b10e-f2b362e06a05",
+      "name": "Note remise à zéro",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -240
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1300,
+        "height": 200,
+        "content": "## QA Homey — 5. Remettre à zéro\nAppelé par la Tour de contrôle quand vous cliquez sur **Arrêter** : pour chaque story du tableau, retire les étiquettes `qa-*` et remet le ticket dans la colonne **À faire** du tableau Jira (par le flux 3). Les tickets Bug ne sont pas touchés : ce sont de vrais défauts.\n\nÀ publier une fois (bouton **Publish**). Vérifier que la boîte « Jira : retirer les étiquettes qa » utilise l'identifiant **Jira SW Cloud API**."
+      }
+    },
+    {
+      "id": "12c1fd15-8724-4a48-b38c-9dbd599d987f",
+      "name": "Remise à zéro demandée par la Tour",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        100
+      ],
+      "webhookId": "27ffe056-10b8-4195-bd27-b65f6150f671",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qa-homey-remettre-a-zero",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "2fa3d7a3-adac-4e7c-a0de-6f15ff211b9b",
+      "name": "Réglages",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        100
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2baca956-7a3d-4d77-9654-08d058a67aac",
+              "name": "jiraSite",
+              "value": "https://testacademy.atlassian.net",
+              "type": "string"
+            },
+            {
+              "id": "00f7a79e-8a2f-42bf-9d74-2b0cf08ecc71",
+              "name": "dossierProjet",
+              "value": "C:\\Dev\\Test-Academy\\GIPHAR",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7bd9e740-2124-417e-a846-053ffc5a4fd5",
+      "name": "Une story à la fois",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// La liste envoyee par la Tour : { \"stories\": [{ \"cle\": \"HVC-6\", \"titre\": \"...\" }, ...] }\nconst corps = $('Remise à zéro demandée par la Tour').first().json.body || {};\nconst r = $('Réglages').first().json;\nreturn (corps.stories || [])\n  .filter(s => /^[A-Z][A-Z0-9]+-\\d+$/.test(String(s.cle || '')))\n  .map(s => ({ json: { cle: s.cle, titre: String(s.titre || '').slice(0, 150), jiraSite: r.jiraSite, dossierProjet: r.dossierProjet } }));"
+      }
+    },
+    {
+      "id": "f63e1331-1e1c-416c-a626-b54fa8bc4499",
+      "name": "Jira : retirer les étiquettes qa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        100
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.jiraSite }}/rest/api/3/issue/{{ $json.cle }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"update\":{\"labels\":[{\"remove\":\"qa-en-cours\"},{\"remove\":\"qa-a-valider\"},{\"remove\":\"qa-termine\"},{\"remove\":\"qa-bloque\"}]}}",
+        "options": {}
+      }
+    },
+    {
+      "id": "2205e72b-7864-4943-90a7-c105ac36bdfb",
+      "name": "🗂 Jira : colonne À faire",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        100
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Une story à la fois').item.json.cle }}",
+            "titreStory": "={{ $('Une story à la fois').item.json.titre }}",
+            "colonne": "À faire",
+            "jiraSite": "={{ $('Une story à la fois').item.json.jiraSite }}",
+            "dossierProjet": "={{ $('Une story à la fois').item.json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "9e29df73-63d4-469a-94fe-07856fbf2b98",
+      "name": "📓 Journal : remise à zéro",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        880,
+        -100
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "command": "=cd /d \"{{ $('Une story à la fois').item.json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Une story à la fois').item.json.titre || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Une story à la fois').item.json.cle }})\" \"n8n\" \"↺ remise à zéro : étiquettes qa-* retirées, ticket remis dans « À faire »\""
+      }
+    }
+  ],
+  "connections": {
+    "Remise à zéro demandée par la Tour": {
+      "main": [
+        [
+          {
+            "node": "Réglages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réglages": {
+      "main": [
+        [
+          {
+            "node": "Une story à la fois",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Une story à la fois": {
+      "main": [
+        [
+          {
+            "node": "Jira : retirer les étiquettes qa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : retirer les étiquettes qa": {
+      "main": [
+        [
+          {
+            "node": "🗂 Jira : colonne À faire",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : remise à zéro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false,
+  "pinData": {}
+}
