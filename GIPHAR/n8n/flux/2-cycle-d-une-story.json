@@ -4,7 +4,7 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## QA Homey — 2. Cycle d'une story\nUne exécution de ce flux = **une story**. Les boîtes 🤖 sont les agents Claude, lancés l'un après l'autre.\n\n**⏸ Attendre votre validation** : l'exécution se met en pause (statut *Waiting*). Le lien du formulaire est donné par Claude dans la conversation, et se trouve aussi dans le commentaire Jira de la story et dans sa fiche de suivi. Refuser renvoie le cas à l'analyste avec vos remarques.\n\nSi un agent est bloqué : commentaire dans la story Jira, étiquette **qa-bloque**, et l'exécution s'arrête en rouge.\n\n**📓 Journal** : chaque étape, et chaque action des agents, est notée dans `suivi-des-stories/journal-des-taches.md`.",
+        "content": "## QA Homey — 2. Cycle d'une story\nUne exécution de ce flux = **une story**. Les boîtes 🤖 sont les agents Claude, lancés l'un après l'autre.\n\n**⏸ Attendre votre validation** : l'exécution se met en pause (statut *Waiting*). Le lien du formulaire est donné par Claude dans la conversation, et se trouve aussi dans le commentaire Jira de la story et dans sa fiche de suivi. Refuser renvoie le cas à l'analyste avec vos remarques.\n\nSi un agent est bloqué : commentaire dans la story Jira, étiquette **qa-bloque**, et l'exécution s'arrête en rouge.\n\n**📓 Journal** : chaque étape, et chaque action des agents, est notée dans `suivi-des-stories/journal-des-taches.md`.\n\n**🗂 Kanban Jira** : à chaque étape, le ticket change de colonne dans le tableau Jira (flux « 3. Déplacer le ticket dans Jira »).",
         "height": 260,
         "width": 1500,
         "color": 7
@@ -831,6 +831,798 @@
         "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"🛑 cycle interrompu à l'étape {{ $('🛑 Préparer le signalement').first().json.agent }} : commentaire et étiquette qa-bloque posés dans Jira\""
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "cda845d3-ee75-4db3-b16d-699dd874dd44",
+      "name": "🗂 Jira : colonne Analyste",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        428,
+        -300
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "Analyste",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "75beff96-64e1-419c-b216-d579c31a9ebd",
+      "name": "🗂 Jira : colonne À valider",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1548,
+        -300
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "À valider",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "82e8b0fa-94cd-4f69-8f85-cfa5f4782fcd",
+      "name": "🗂 Jira : retour colonne Analyste",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2108,
+        230
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "Analyste",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "ec2fe40a-899a-48b6-b47d-7e082dba234a",
+      "name": "🗂 Jira : colonne Automaticien",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2668,
+        -300
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "Automaticien",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "699d5886-367e-4a30-880a-53cd37c7d6fb",
+      "name": "🗂 Jira : colonne Exécutant",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3500,
+        -300
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "Exécutant",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "1681eb29-1ea9-43d3-a1f4-fa2f517f38f6",
+      "name": "🗂 Jira : colonne Anomalies",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4348,
+        -300
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "Anomalies",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "10f0d5fb-221b-4841-bef4-00c4410d5878",
+      "name": "🗂 Jira : colonne Rapporteur",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        5180,
+        -300
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "Rapporteur",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "46748ce5-49b5-437c-9d0d-4a1083ce0678",
+      "name": "🗂 Jira : colonne Terminé",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        6300,
+        -300
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "Terminé",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "bfa3a1d8-d4b1-40a9-80d6-1caf3f427009",
+      "name": "🗂 Jira : colonne Bloqué",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        4348,
+        220
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
+            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
+            "colonne": "Bloqué",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
     }
   ],
   "connections": {
@@ -866,6 +1658,11 @@
           },
           {
             "node": "📓 Journal : cycle démarré",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🗂 Jira : colonne Analyste",
             "type": "main",
             "index": 0
           }
@@ -924,6 +1721,11 @@
             "node": "📓 Journal : attente de validation",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "🗂 Jira : colonne À valider",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -963,6 +1765,11 @@
             "node": "📓 Journal : cas refusé",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "🗂 Jira : retour colonne Analyste",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -999,6 +1806,11 @@
           },
           {
             "node": "📓 Journal : statut Squash",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🗂 Jira : colonne Automaticien",
             "type": "main",
             "index": 0
           }
@@ -1041,6 +1853,11 @@
             "node": "🤖 Agent exécutant : lance la campagne",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "🗂 Jira : colonne Exécutant",
+            "type": "main",
+            "index": 0
           }
         ],
         [
@@ -1081,6 +1898,11 @@
             "node": "🤖 Agent gestionnaire d'anomalies : trie les échecs",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "🗂 Jira : colonne Anomalies",
+            "type": "main",
+            "index": 0
           }
         ],
         [
@@ -1119,6 +1941,11 @@
         [
           {
             "node": "🤖 Agent rapporteur : publie les comptes rendus",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🗂 Jira : colonne Rapporteur",
             "type": "main",
             "index": 0
           }
@@ -1184,6 +2011,11 @@
             "node": "📓 Journal : cycle terminé",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "🗂 Jira : colonne Terminé",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1220,6 +2052,11 @@
           },
           {
             "node": "📓 Journal : cycle interrompu",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🗂 Jira : colonne Bloqué",
             "type": "main",
             "index": 0
           }

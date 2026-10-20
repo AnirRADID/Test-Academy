@@ -8,6 +8,8 @@ outil gratuit qui affiche le travail sous forme de boîtes reliées entre elles.
 | `demarrer-n8n.cmd` | Démarre n8n avec les bons réglages (double-clic) |
 | `flux/1-lancer-des-stories.json` | Le flux « lancement » : reçoit de Claude la liste des stories à tester |
 | `flux/2-cycle-d-une-story.json` | Le flux « cycle » : fait travailler les 5 agents sur une story |
+| `flux/3-deplacer-le-ticket-dans-jira.json` | Fait passer le ticket d'une colonne à l'autre du tableau Jira, à chaque étape |
+| `../supervision/` | L'écran de supervision (http://localhost:5680), démarré avec n8n |
 | `outils/lancer-agent.mjs` | Lance un agent pour n8n et raconte au journal chacune de ses actions |
 | `outils/ecrire-au-journal.mjs` | Ajoute une ligne au journal (utilisé par les boîtes 📓 de n8n) |
 
@@ -136,15 +138,52 @@ Faire de même dans la boîte **Story de test** du flux **2. Cycle d'une story**
 ### 7. Publier les deux flux
 
 Ouvrir chaque flux et cliquer sur le bouton **Publish** (*Publier*), en haut à droite.
-**Commencer par le flux 2**, puis le flux 1. Un flux non publié ne peut pas recevoir de
+**Commencer par le flux 3**, puis le 2, puis le 1. Un flux non publié ne peut pas recevoir de
 demande : n8n répondrait « Workflow is not active ». Après toute modification d'un flux,
 cliquer de nouveau sur **Publish**, sinon n8n continue d'utiliser l'ancienne version.
 
 Docker Desktop (pour Squash) doit aussi être démarré.
 
+### 8. Créer les colonnes du Kanban Jira (une seule fois, 5 minutes)
+
+À chaque étape, n8n fait passer le ticket de la story dans la colonne de l'agent qui prend le
+relais. Ces colonnes doivent exister dans le tableau Jira du projet. Jira ne permet pas de les
+créer automatiquement sur ce type de projet : on les crée à la main, une fois.
+
+1. Ouvrir <https://testacademy.atlassian.net>, projet **Homey via Claude** (HVC), puis
+   **Tableau** (*Board*) dans le menu de gauche.
+2. À droite de la dernière colonne, cliquer sur **+** (*Créer une colonne*), taper le nom,
+   puis Entrée. Recommencer pour chacune de ces 7 colonnes, **avec exactement ces noms** :
+   `Analyste` · `À valider` · `Automaticien` · `Exécutant` · `Anomalies` · `Rapporteur` · `Bloqué`
+3. Remettre les colonnes dans l'ordre en les faisant glisser par leur titre :
+   **À faire → Analyste → À valider → Automaticien → Exécutant → Anomalies → Rapporteur →
+   Terminé → Bloqué**.
+4. La colonne **En cours** ne sert plus : si elle est vide, on peut la supprimer (bouton
+   **•••** en haut de la colonne > *Supprimer*).
+
+Dans ce type de projet, créer une colonne crée aussi le statut du même nom : c'est lui que n8n
+utilise. Une colonne oubliée ne bloque jamais le cycle : le journal affiche alors
+« ⚠ colonne Jira « … » introuvable ». Après avoir créé les colonnes, demandez à Claude de
+vérifier qu'elles sont toutes là.
+
 ---
 
 ## Au quotidien
+
+### L'écran de supervision
+
+Il s'ouvre tout seul dans le navigateur au démarrage de n8n : <http://localhost:5680>.
+Il se met à jour toutes les 3 secondes.
+
+- **L'équipe** : pour chaque agent, s'il est *au travail* (sur quelle story, ce qu'il fait
+  en ce moment et depuis quand), s'il *attend son tour*, ou s'il est *libre* (avec son
+  dernier travail).
+- **Les stories, étape par étape** : les mêmes colonnes que le tableau Jira. Quand une story
+  change d'étape, sa carte glisse vers sa nouvelle colonne. Une story en attente de vous
+  affiche un bouton **Valider le cas →**. Un clic sur une carte ouvre sa fiche de suivi.
+- **Le fil d'activité** : le journal des tâches, le plus récent en haut, filtrable par story.
+
+En haut à droite, deux pastilles disent si n8n et Squash sont allumés.
 
 ### Lancer le test d'une ou plusieurs stories
 
@@ -237,6 +276,8 @@ story précise**. Pratique en formation, sans passer par Claude.
 | L'agent exécutant bloque sur Squash | Docker Desktop éteint | Démarrer Docker Desktop, attendre 2 min, puis « relance HVC-x » |
 | Claude dit que n8n refuse la demande (« not registered ») | Flux 1 non publié, ou n8n vient de démarrer | Attendre 30 s ; sinon étape 7 |
 | Le lien du formulaire ne s'ouvre pas | n8n arrêté | Relancer `demarrer-n8n.cmd` : l'exécution en attente est conservée |
+| L'écran de supervision ne s'ouvre pas | Sa petite fenêtre « Supervision GIPHAR » a été fermée | Relancer `demarrer-n8n.cmd`, ou `node supervision/serveur-supervision.mjs` |
+| Journal : « ⚠ colonne Jira … introuvable » | Colonne absente du tableau Jira | Étape 8 |
 
 ## Coût
 

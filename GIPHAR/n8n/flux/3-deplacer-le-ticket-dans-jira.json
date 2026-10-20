@@ -1,0 +1,336 @@
+{
+  "id": "QaHomeyDeplacerT",
+  "name": "QA Homey - 3. Déplacer le ticket dans Jira",
+  "nodes": [
+    {
+      "id": "c460ae99-8e15-487e-8784-d12093bfd603",
+      "name": "Note déplacement",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -260
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1500,
+        "height": 200,
+        "content": "## QA Homey — 3. Déplacer le ticket dans Jira\nAppelé par le flux « 2. Cycle d'une story » à chaque étape : fait passer le ticket dans la colonne de l'agent qui prend le relais (Analyste, À valider, Automaticien, Exécutant, Anomalies, Rapporteur, Terminé, Bloqué).\n\nLes colonnes doivent exister dans le tableau Jira du projet HVC (voir n8n/README.md). Une colonne manquante ne bloque jamais le cycle : elle est signalée par une ligne ⚠ dans le journal."
+      }
+    },
+    {
+      "id": "86226220-b91b-413d-a8da-42ac3f6f07c3",
+      "name": "Demande de déplacement",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "cleStory"
+            },
+            {
+              "name": "titreStory"
+            },
+            {
+              "name": "colonne"
+            },
+            {
+              "name": "jiraSite"
+            },
+            {
+              "name": "dossierProjet"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1b9dbb51-a86a-4081-9ce7-45265df3bc9c",
+      "name": "Jira : état du ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "options": {},
+        "method": "GET",
+        "url": "={{ $('Demande de déplacement').first().json.jiraSite }}/rest/api/3/issue/{{ $('Demande de déplacement').first().json.cleStory }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "status"
+            },
+            {
+              "name": "expand",
+              "value": "transitions"
+            }
+          ]
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "ab198fb7-ff93-4f11-8c69-cf12f450699c",
+      "name": "Choisir la colonne",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// La colonne demandee = un statut du tableau Jira. Comparaison sans accents ni majuscules.\nconst demande = $('Demande de déplacement').first().json;\nconst ticket = $input.first().json;\nconst norm = (s) => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim();\nconst voulu = norm(demande.colonne);\nif (norm(ticket.fields?.status?.name) === voulu) return [{ json: { action: 'deja' } }];\nconst transitions = ticket.transitions || [];\nconst t = transitions.find((x) => norm(x.to?.name) === voulu) || transitions.find((x) => norm(x.name) === voulu);\nif (t) return [{ json: { action: 'deplacer', id: t.id } }];\nreturn [{ json: { action: 'introuvable', possibles: transitions.map((x) => x.to?.name).filter(Boolean).join(', ') || 'aucune' } }];"
+      }
+    },
+    {
+      "id": "d71f75c4-410b-4165-8252-6d2bb84cedae",
+      "name": "À déplacer ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a044b9d2-3c8c-499d-91c9-90a392d001e4",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "deplacer",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "adece7df-a4fa-42ca-8d0b-751838141f6e",
+      "name": "Jira : déplacer le ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        -80
+      ],
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "options": {},
+        "method": "POST",
+        "url": "={{ $('Demande de déplacement').first().json.jiraSite }}/rest/api/3/issue/{{ $('Demande de déplacement').first().json.cleStory }}/transitions",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ transition: { id: $json.id } }) }}"
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "3bbe7a1d-30ca-4794-a500-f1d24838814d",
+      "name": "📓 Journal : ticket déplacé",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        -160
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "command": "=cd /d \"{{ $('Demande de déplacement').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Demande de déplacement').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Demande de déplacement').first().json.cleStory }})\" \"n8n\" \"ticket déplacé dans la colonne « {{ $('Demande de déplacement').first().json.colonne }} » du tableau Jira\""
+      }
+    },
+    {
+      "id": "c93ceff0-63f7-4536-b99d-7dbb1779c807",
+      "name": "📓 Journal : déplacement refusé",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        20
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "command": "=cd /d \"{{ $('Demande de déplacement').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Demande de déplacement').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Demande de déplacement').first().json.cleStory }})\" \"n8n\" \"⚠ Jira a refusé de déplacer le ticket dans la colonne « {{ $('Demande de déplacement').first().json.colonne }} »\""
+      }
+    },
+    {
+      "id": "594a9ff2-6898-44f2-9796-38318b78d179",
+      "name": "Colonne introuvable ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4c454264-327d-4499-8905-fd1afda920eb",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "introuvable",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1de69c21-26d9-46af-8f11-4e6d744e91e1",
+      "name": "📓 Journal : colonne introuvable",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        160
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "command": "=cd /d \"{{ $('Demande de déplacement').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Demande de déplacement').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Demande de déplacement').first().json.cleStory }})\" \"n8n\" \"⚠ colonne Jira « {{ $('Demande de déplacement').first().json.colonne }} » introuvable : la créer dans le tableau Jira (colonnes possibles : {{ String($json.possibles || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }})\""
+      }
+    },
+    {
+      "id": "14bab53b-31bd-450a-9cba-b62fdadc8ec6",
+      "name": "📓 Journal : ticket illisible",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        560,
+        240
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "command": "=cd /d \"{{ $('Demande de déplacement').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Demande de déplacement').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Demande de déplacement').first().json.cleStory }})\" \"n8n\" \"⚠ impossible de lire le ticket dans Jira pour le changer de colonne\""
+      }
+    }
+  ],
+  "connections": {
+    "Demande de déplacement": {
+      "main": [
+        [
+          {
+            "node": "Jira : état du ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : état du ticket": {
+      "main": [
+        [
+          {
+            "node": "Choisir la colonne",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📓 Journal : ticket illisible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Choisir la colonne": {
+      "main": [
+        [
+          {
+            "node": "À déplacer ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "À déplacer ?": {
+      "main": [
+        [
+          {
+            "node": "Jira : déplacer le ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Colonne introuvable ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : déplacer le ticket": {
+      "main": [
+        [
+          {
+            "node": "📓 Journal : ticket déplacé",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📓 Journal : déplacement refusé",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Colonne introuvable ?": {
+      "main": [
+        [
+          {
+            "node": "📓 Journal : colonne introuvable",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {}
+}
