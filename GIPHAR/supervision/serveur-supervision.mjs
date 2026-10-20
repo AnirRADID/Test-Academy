@@ -28,6 +28,7 @@
  *   /stories?portee=  les stories du sprint actif (sprint) ou du backlog, lues dans Jira par
  *                     le flux n8n « 4. Lister les stories »
  *   /execution        l'execution Playwright en cours (test, pas, compteurs)
+ *   /execution/flux?w=0   le navigateur pilote par le worker 0, en video (MJPEG)
  *   /execution/ecran?w=0  capture JPEG du navigateur pilote par le worker 0
  *   POST /lancer      { portee: "choix"|"sprint"|"backlog", cles: ["HVC-6", …] }
  *   POST /pause, POST /reprendre, POST /arreter
@@ -588,11 +589,61 @@ function lireExecution() {
     return e;
   } catch { return null; }
 }
+// Le navigateur en mouvement : flux video MJPEG (une image JPEG par changement d'ecran), que
+// la page affiche dans une simple balise <img>. Chrome envoie les images lui-meme
+// (Page.startScreencast). Entre deux tests, la page change : on se rebranche sur la nouvelle.
+// La page que le test manipule : Chrome liste la plus recente en premier ; on ecarte les pages
+// vierges (about:blank) que Playwright ouvre en preparation.
+const pageActive = (pages) => {
+  const p = pages.filter(x => x.type === 'page');
+  return p.find(x => x.url && x.url !== 'about:blank') || p[0] || null;
+};
+function diffuserEcran(indice, req, res) {
+  const port = 9300 + Number(indice);
+  if (!Number.isInteger(port) || port < 9300 || port > 9363) return json(res, 404, { erreur: 'écran inconnu' });
+  res.writeHead(200, { 'Content-Type': 'multipart/x-mixed-replace; boundary=cadre', 'Cache-Control': 'no-store', Connection: 'close' });
+  let fini = false, ws = null, cibleId = null;
+  const fermer = () => { try { ws?.close(); } catch { /* deja ferme */ } };
+  req.on('close', () => { fini = true; fermer(); });
+  const envoyer = (image) => {
+    if (fini) return;
+    res.write(`--cadre\r\nContent-Type: image/jpeg\r\nContent-Length: ${image.length}\r\n\r\n`);
+    res.write(image);
+    res.write('\r\n');
+  };
+  const brancher = (cible) => {
+    fermer();
+    cibleId = cible.id;
+    const moi = ws = new WebSocket(cible.webSocketDebuggerUrl);
+    let n = 0;
+    moi.onopen = () => moi.send(JSON.stringify({ id: ++n, method: 'Page.startScreencast', params: { format: 'jpeg', quality: 60, maxWidth: 1280, maxHeight: 800 } }));
+    moi.onmessage = (m) => {
+      const r = JSON.parse(m.data);
+      if (r.method !== 'Page.screencastFrame') return;
+      envoyer(Buffer.from(r.params.data, 'base64'));
+      moi.send(JSON.stringify({ id: ++n, method: 'Page.screencastFrameAck', params: { sessionId: r.params.sessionId } }));
+    };
+    moi.onclose = () => { if (ws === moi) cibleId = null; };
+    moi.onerror = () => {};
+  };
+  (async () => {
+    while (!fini) {
+      try {
+        const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1500) })).json();
+        const cible = pageActive(pages);
+        if (cible && cible.id !== cibleId) brancher(cible);
+      } catch { cibleId = null; /* pas de navigateur pour l'instant (entre deux tests) */ }
+      await new Promise(r => setTimeout(r, 600));
+    }
+    fermer();
+  })();
+}
+
 async function capturerEcran(indice) {
   const port = 9300 + Number(indice);
   if (!Number.isInteger(port) || port < 9300 || port > 9363) throw new Error('écran inconnu');
   const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1500) })).json();
-  const cible = pages.filter(x => x.type === 'page').at(-1);
+  const cible = pageActive(pages);
   if (!cible) throw new Error('aucune page ouverte');
   return new Promise((ok, ko) => {
     const ws = new WebSocket(cible.webSocketDebuggerUrl);
@@ -706,6 +757,7 @@ const serveur = http.createServer(async (req, res) => {
     }
     if (url.pathname === '/historique') return json(res, 200, historiqueDe(url.searchParams.get('cle')));
     if (url.pathname === '/execution') return json(res, 200, lireExecution() || { enCours: false, jamais: true });
+    if (url.pathname === '/execution/flux') return diffuserEcran(url.searchParams.get('w') || 0, req, res);
     if (url.pathname === '/execution/ecran') {
       try {
         const c = await capturerEcran(url.searchParams.get('w') || 0);

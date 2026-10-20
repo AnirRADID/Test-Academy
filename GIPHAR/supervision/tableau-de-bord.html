@@ -268,20 +268,29 @@ button:disabled{opacity:.5;cursor:default}
 .bug-chip{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;padding:2px 6px;border-radius:6px;background:var(--crit-bg);color:var(--crit);text-decoration:none}
 .bug-chip small{font-family:var(--body);font-size:10px;opacity:.85}
 .point-direct{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--crit);margin-left:4px;animation:pulse 1.2s infinite}
-.fenetre-exe{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(520px,calc(100% - 32px));max-height:min(80vh,720px);background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px #0004;z-index:15;display:flex;flex-direction:column;overflow:hidden}
-.fx-tete{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);font-family:var(--display)}
-.fx-tete span{font-family:var(--body);font-size:12px;color:var(--muted);margin-right:auto}
-.fx-tete .d-close{margin-left:0}
-.fx-corps{overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:10px}
-.fx-worker{display:flex;flex-direction:column;gap:4px}
-.fx-worker .fx-test{font-weight:600;font-size:13px}
-.fx-worker .fx-pas{font-size:12.5px;color:var(--muted)}
-.fx-ecran{width:100%;aspect-ratio:16/10;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;overflow:hidden;color:var(--muted);font-size:12px}
-.fx-ecran img{width:100%;height:100%;object-fit:contain;display:block}
-.fx-progress{height:6px;border-radius:3px;background:var(--line);overflow:hidden;display:flex}
-.fx-progress b{display:block;height:100%}
-.fx-derniers{list-style:none;margin:0;padding:0;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
-.fx-derniers li{display:flex;gap:6px}
+/* Fenêtre « navigateur en direct » : fermée, réduite (barre de titre), normale ou agrandie */
+.fenetre-exe{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(520px,calc(100% - 32px));background:#111722;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 44px #0006;z-index:15;display:flex;flex-direction:column;overflow:hidden}
+.fenetre-exe[data-taille="fermee"]{display:none}
+.fenetre-exe[data-taille="reduite"]{width:min(300px,calc(100% - 32px))}
+.fenetre-exe[data-taille="reduite"] .fx-corps{display:none}
+.fenetre-exe[data-taille="agrandie"]{left:4vw;right:4vw;top:calc(4vh + env(safe-area-inset-top,0px));bottom:calc(4vh + env(safe-area-inset-bottom,0px));width:auto}
+.fx-tete{display:flex;align-items:center;gap:4px;padding:6px 6px 6px 12px;background:#1b2230;color:#e6eaf1;font-family:var(--display);font-size:13.5px;cursor:default;user-select:none}
+.fx-titre{display:inline-flex;align-items:center;gap:8px;margin-right:auto;font-weight:700}
+.fx-titre svg{width:22px;height:22px}
+.fx-btn{width:32px;height:28px;border:0;border-radius:6px;background:transparent;color:#e6eaf1;font-size:15px;line-height:1;display:grid;place-items:center}
+.fx-btn:hover{background:#2c3545}
+.fx-btn[data-fx="fermer"]:hover{background:#c62828}
+.fx-corps{flex:1;min-height:0;display:grid;gap:4px;padding:4px;background:#111722;grid-template-columns:repeat(var(--colonnes,1),1fr)}
+.fx-ecran{position:relative;aspect-ratio:16/10;background:#0b0f16;border-radius:6px;overflow:hidden;min-height:0}
+.fenetre-exe[data-taille="agrandie"] .fx-ecran{aspect-ratio:auto}
+/* L'image du flux est au-dessus du robot d'attente : transparente tant qu'aucune image n'est arrivée. */
+.fx-ecran img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1}
+.fx-attente{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:6px;color:#8a95a6;font-size:12px;text-align:center;padding:8px}
+.fx-attente svg{width:64px;height:64px}
+.col-head[data-voir-navigateur]{cursor:pointer}
+.col-head[data-voir-navigateur]:hover svg{transform:scale(1.08)}
+.col-head[data-voir-navigateur] svg{transition:transform .15s}
+.direct{font-size:11px;font-weight:700;color:var(--crit);display:inline-flex;align-items:center;gap:4px}
 </style>
 </head>
 <body>
@@ -334,8 +343,11 @@ button:disabled{opacity:.5;cursor:default}
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title" aria-hidden="true"></aside>
 <div class="toast" id="toast" role="status"></div>
-<section class="fenetre-exe" id="fenetre-exe" aria-label="Exécution en direct" hidden>
-  <div class="fx-tete"><b>🖥 Exécution en direct</b><span id="fx-resume"></span><button class="d-close" data-fermer-execution aria-label="Fermer">×</button></div>
+<section class="fenetre-exe" id="fenetre-exe" data-taille="fermee" aria-label="Navigateur en direct">
+  <div class="fx-tete"><span class="fx-titre" id="fx-titre"></span>
+    <button class="fx-btn" data-fx="reduire" title="Réduire" aria-label="Réduire">&#x2581;</button>
+    <button class="fx-btn" data-fx="agrandir" title="Agrandir" aria-label="Agrandir">&#x2922;</button>
+    <button class="fx-btn" data-fx="fermer" title="Fermer" aria-label="Fermer">&#x2715;</button></div>
   <div class="fx-corps" id="fx-corps"></div>
 </section>
 
@@ -534,7 +546,9 @@ function renderKanban() {
       icon = robot(kind, { travail: 'on', bloque: 'ko', pause: 'zz' }[a.etat] || 'off'); who = col.titre;
       st = { travail: 'au travail', bloque: 'bloqué', attente: 'attend son tour', pause: 'en pause', libre: 'libre' }[a.etat]; stCls = a.etat === 'travail' ? 'on' : a.etat === 'bloque' ? 'ko' : '';
     }
-    return `<section class="col ${kind}" aria-label="${esc(who)}"><div class="col-head">${icon}<span class="who">${esc(who)}</span>${st ? `<span class="st ${stCls}">${st}</span>` : ''}<span class="count">${ici.length} stor${ici.length > 1 ? 'ies' : 'y'}</span></div>
+    const voir = kind === 'exe' ? ` data-voir-navigateur role="button" tabindex="0" title="Voir le navigateur en direct"` : '';
+    const direct = kind === 'exe' && fx.enCours ? `<span class="direct"><i class="point-direct"></i>en direct</span>` : '';
+    return `<section class="col ${kind}" aria-label="${esc(who)}"><div class="col-head"${voir}>${icon}<span class="who">${esc(who)}</span>${direct}${st ? `<span class="st ${stCls}">${st}</span>` : ''}<span class="count">${ici.length} stor${ici.length > 1 ? 'ies' : 'y'}</span></div>
       <div class="col-body">${ici.length ? ici.map(s => carte(s, kind)).join('') : `<p class="empty">Rien pour l'instant</p>`}</div></section>`;
   }).join(''));
   const L = E.lancement;
@@ -557,8 +571,7 @@ function renderPilotage() {
     ? `<span class="confirm">Tout arrêter et remettre à zéro ? Le tableau sera vidé et, dans Jira, ses stories reviendront dans « À faire ». <button class="btn btn-crit small" data-arreter-oui>Oui, tout remettre à zéro</button> <button class="btn btn-ghost small" data-arreter-non>Annuler</button></span>`
     : `<button class="btn btn-crit" data-arreter title="Arrêter définitivement et tout remettre à zéro">⏹ Arrêter</button>`;
   const lancer = `<button class="btn btn-primary" data-ouvrir-lancement>${surTableau ? '＋ Lancer d’autres tests' : '▶ Lancer des tests'}</button>`;
-  const exe = `<button class="btn btn-ghost" data-execution title="Voir le navigateur piloté par les tests">🖥 Exécution${execEnCours ? ' <i class="point-direct"></i>' : ''}</button>`;
-  zone('pilotage', `<div class="pilotage"><div class="etat-lancement">${etatTxt}</div><div class="actions">${exe}${pause}${arret}${lancer}</div></div>${bandeau}`);
+  zone('pilotage', `<div class="pilotage"><div class="etat-lancement">${etatTxt}</div><div class="actions">${pause}${arret}${lancer}</div></div>${bandeau}`);
 }
 function renderHistorique() {
   zone('historique', E.historique.length ? `<details class="histo"><summary>Historique des lancements (${E.historique.length})</summary><ul>${E.historique.map(l =>
@@ -768,8 +781,10 @@ document.addEventListener('click', (e) => {
   if (rl) { rl.disabled = true; return piloter('/lancer', j => `${rl.dataset.relancer} relancée (lancement n° ${j.n})`,
     { portee: 'choix', cles: [rl.dataset.relancer], titres: { [rl.dataset.relancer]: rl.dataset.titre } }); }
   if (e.target.closest('[data-ouvrir-lancement]')) return ouvrirLancement();
-  if (e.target.closest('[data-execution]')) return basculerExecution();
-  if (e.target.closest('[data-fermer-execution]')) return basculerExecution(false);
+  if (e.target.closest('[data-voir-navigateur]')) return fxTaille(fx.taille === 'agrandie' ? 'agrandie' : 'normale');
+  const b = e.target.closest('[data-fx]');
+  if (b) return fxTaille({ fermer: 'fermee', reduire: fx.taille === 'reduite' ? fx.avant : 'reduite',
+                           agrandir: fx.taille === 'agrandie' ? 'normale' : 'agrandie' }[b.dataset.fx]);
   if (e.target.closest('[data-pause]')) return piloter('/pause', 'Pause demandée : les robots finissent leur étape en cours');
   if (e.target.closest('[data-reprendre]')) return piloter('/reprendre', 'Reprise : les robots repartent');
   if (e.target.closest('[data-arreter]')) { confirmerArret = true; vus.pilotage = null; return renderPilotage(); }
@@ -782,66 +797,62 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') fermerTiroir();
   if (e.key === 'Enter' && e.target.matches('.card[data-fiche]')) ouvrirFiche(e.target.dataset.fiche);
+  if (e.key === 'Enter' && e.target.matches('[data-voir-navigateur]')) fxTaille('normale');
 });
 $('scrim').onclick = fermerTiroir;
 $('tab-r').onclick = () => choisirOnglet('r');
 $('tab-c').onclick = () => choisirOnglet('c');
 try { if (localStorage.getItem('tour-onglet') === 'c') choisirOnglet('c'); } catch { /* sans importance */ }
 
-/* ---------- fenêtre « Exécution » : le navigateur piloté par les tests, en direct ---------- */
-let execEnCours = false, fenetreOuverte = false, minuteurExe = null;
-let executionFermee = null, derniereExecution = null;
-function basculerExecution(ouvrir = !fenetreOuverte) {
-  if (!ouvrir) executionFermee = derniereExecution;
-  fenetreOuverte = ouvrir;
-  $('fenetre-exe').hidden = !ouvrir;
-  clearInterval(minuteurExe);
-  if (ouvrir) { majExecution(); minuteurExe = setInterval(majExecution, 1000); }
+/* ---------- fenêtre « navigateur en direct » ----------
+   Montre le navigateur piloté par Playwright, en mouvement (flux vidéo /execution/flux).
+   Quatre états : fermée, réduite, normale, agrandie. S'ouvre d'un clic sur le robot de la
+   colonne Exécutant, et toute seule quand le robot Exécutant lance une campagne. */
+const fx = { taille: 'fermee', avant: 'normale', enCours: false, execution: null, fermeePour: null, ecrans: ['0'] };
+function fxTaille(taille) {
+  if (taille === 'fermee') fx.fermeePour = fx.execution;   // pas de réouverture automatique pour cette exécution
+  if (taille !== 'reduite' && taille !== 'fermee') fx.avant = taille;
+  fx.taille = taille;
+  $('fenetre-exe').dataset.taille = taille;
+  $('fenetre-exe').querySelector('[data-fx="agrandir"]').title = taille === 'agrandie' ? 'Rétablir' : 'Agrandir';
+  dessinerEcrans();
+}
+// Les flux ne sont branchés que si la fenêtre montre les écrans : fermée ou réduite, on les coupe
+// (recréer les balises <img> sans adresse interrompt le téléchargement).
+function dessinerEcrans() {
+  const visible = fx.taille === 'normale' || fx.taille === 'agrandie';
+  const corps = $('fx-corps');
+  corps.style.setProperty('--colonnes', fx.ecrans.length > 1 ? 2 : 1);
+  corps.innerHTML = fx.ecrans.map(w => `<div class="fx-ecran"><img data-w="${esc(w)}" alt="Navigateur piloté par le test"><div class="fx-attente">${robot('exe', fx.enCours ? 'on' : 'zz')}<span>${fx.enCours ? 'Ouverture du navigateur…' : 'Le navigateur apparaîtra ici dès que les tests démarrent'}</span></div></div>`).join('');
+  corps.querySelectorAll('img').forEach(img => {
+    if (visible) img.src = `/execution/flux?w=${encodeURIComponent(img.dataset.w)}&t=${Date.now()}`;
+  });
+  majTitre();
+}
+function majTitre() {
+  $('fx-titre').innerHTML = `${robot('exe', fx.enCours ? 'on' : 'off')}Navigateur en direct${fx.enCours ? ' <i class="point-direct"></i>' : ''}`;
 }
 async function majExecution() {
   let x;
   try { x = await (await fetch('/execution', { cache: 'no-store' })).json(); } catch { return; }
-  derniereExecution = x.enCours ? x.debut : derniereExecution;
-  const avant = execEnCours;
-  execEnCours = !!x.enCours;
-  if (avant !== execEnCours && E) { vus.pilotage = null; renderPilotage(); }
-  // Une nouvelle exécution démarre : la fenêtre s'ouvre toute seule (sauf si vous l'avez
-  // fermée pendant cette même exécution).
-  if (x.enCours && !fenetreOuverte && x.debut !== executionFermee) return basculerExecution(true);
-  if (!fenetreOuverte) return;
-  const fini = x.reussis + x.echoues;
-  $('fx-resume').textContent = x.jamais ? '' : `${x.origine === 'campagne' ? 'Campagne (résultats envoyés à Squash)' : "Essai de l'automaticien"} · ${fini}/${x.total} tests`;
-  if (!x.enCours) {
-    $('fx-corps').dataset.cle = '';
-    $('fx-corps').innerHTML = `<p class="vide" style="margin:8px">${x.jamais ? "Aucune exécution pour l'instant." : x.interrompue ? "La dernière exécution s'est interrompue." : `Aucune exécution en cours. Dernière : terminée à ${heure(x.fin)}, ${x.reussis} réussi${x.reussis > 1 ? 's' : ''}, ${x.echoues} échoué${x.echoues > 1 ? 's' : ''}.`}</p>
-      ${x.derniers?.length ? `<ul class="fx-derniers">${x.derniers.map(d => `<li>${d.statut === 'passed' ? '✓' : d.statut === 'skipped' ? '–' : '✗'} ${esc(d.test)}</li>`).join('')}</ul>` : ''}`;
-    return;
-  }
-  const workers = Object.entries(x.workers || {});
-  const barre = x.total ? `<div class="fx-progress" title="${x.reussis} réussis, ${x.echoues} échoués sur ${x.total}"><b style="width:${x.reussis / x.total * 100}%;background:var(--good)"></b><b style="width:${x.echoues / x.total * 100}%;background:var(--crit)"></b></div>` : '';
-  // On ne reconstruit que si la liste des navigateurs a changé : sinon les images clignoteraient.
-  const cle = workers.map(([w]) => w).join(',');
-  if ($('fx-corps').dataset.cle !== cle) {
-    $('fx-corps').dataset.cle = cle;
-    $('fx-corps').innerHTML = `<div id="fx-barre"></div>` + (workers.length ? workers.map(([w]) => `<div class="fx-worker" data-w="${esc(w)}">
-      <span class="fx-test"></span><span class="fx-pas"></span><div class="fx-ecran"><img alt="Écran du navigateur piloté par le test"><span class="fx-attente">Connexion au navigateur…</span></div></div>`).join('')
-      : `<p class="vide" style="margin:8px">Entre deux tests…</p>`);
-  }
-  $('fx-barre').innerHTML = barre;
-  for (const [w, t] of workers) {
-    const bloc = document.querySelector(`.fx-worker[data-w="${CSS.escape(w)}"]`);
-    if (!bloc) continue;
-    bloc.querySelector('.fx-test').textContent = t.test;
-    bloc.querySelector('.fx-pas').textContent = t.pas ? `Pas ${t.numeroPas} : ${t.pas}` : 'Préparation du test';
-    const img = bloc.querySelector('img'), attente = bloc.querySelector('.fx-attente');
-    const suivante = new Image();
-    suivante.onload = () => { img.src = suivante.src; img.hidden = false; attente.hidden = true; };
-    suivante.onerror = () => { if (!img.src) { img.hidden = true; attente.hidden = false; } };
-    suivante.src = `/execution/ecran?w=${encodeURIComponent(w)}&t=${Date.now()}`;
-  }
+  const avant = fx.enCours, ancienne = fx.execution;
+  fx.enCours = !!x.enCours;
+  if (x.enCours) fx.execution = x.debut;
+  // Un écran par navigateur (worker Playwright) apparu pendant cette exécution.
+  const actifs = x.enCours ? Object.keys(x.workers || {}) : [];
+  const ecrans = fx.execution !== ancienne ? (actifs.length ? actifs : ["0"]) : [...new Set([...fx.ecrans, ...actifs])];
+  ecrans.sort((a, b) => a - b);
+  // On rebranche les écrans quand une exécution démarre ou qu'un navigateur apparaît ; à la
+  // fin, on garde la dernière image affichée.
+  const change = ecrans.join() !== fx.ecrans.join() || (!avant && fx.enCours);
+  fx.ecrans = ecrans;
+  if (avant !== fx.enCours && E) renderKanban();
+  // Le robot Exécutant lance une campagne : la fenêtre s'ouvre toute seule (sauf si vous
+  // l'avez fermée pendant cette même campagne).
+  if (x.enCours && x.origine === 'campagne' && fx.taille === 'fermee' && fx.fermeePour !== x.debut) return fxTaille('normale');
+  if (change && fx.taille !== 'fermee') dessinerEcrans(); else majTitre();
 }
-// Le point rouge du bouton « Exécution » : vérifié toutes les 5 secondes, fenêtre fermée.
-setInterval(() => { if (!fenetreOuverte) majExecution(); }, 2000);
+setInterval(majExecution, 1500);
 
 /* ---------- boucle ---------- */
 async function rafraichir() {
