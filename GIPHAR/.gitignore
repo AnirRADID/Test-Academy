@@ -7,3 +7,4 @@ squash/.homey-test-account
 suivi-des-stories/.agent-en-cours.json
 blob-report/
 .env
+supervision/.analyse-claude.json

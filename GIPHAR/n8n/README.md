@@ -9,7 +9,7 @@ outil gratuit qui affiche le travail sous forme de boîtes reliées entre elles.
 | `flux/1-lancer-des-stories.json` | Le flux « lancement » : reçoit de Claude la liste des stories à tester |
 | `flux/2-cycle-d-une-story.json` | Le flux « cycle » : fait travailler les 5 agents sur une story |
 | `flux/3-deplacer-le-ticket-dans-jira.json` | Fait passer le ticket d'une colonne à l'autre du tableau Jira, à chaque étape |
-| `../supervision/` | L'écran de supervision (http://localhost:5680), démarré avec n8n |
+| `../supervision/` | La Tour de contrôle (http://localhost:5680), démarrée avec n8n |
 | `outils/lancer-agent.mjs` | Lance un agent pour n8n et raconte au journal chacune de ses actions |
 | `outils/ecrire-au-journal.mjs` | Ajoute une ligne au journal (utilisé par les boîtes 📓 de n8n) |
 
@@ -153,13 +153,14 @@ créer automatiquement sur ce type de projet : on les crée à la main, une fois
 1. Ouvrir <https://testacademy.atlassian.net>, projet **Homey via Claude** (HVC), puis
    **Tableau** (*Board*) dans le menu de gauche.
 2. À droite de la dernière colonne, cliquer sur **+** (*Créer une colonne*), taper le nom,
-   puis Entrée. Recommencer pour chacune de ces 7 colonnes, **avec exactement ces noms** :
-   `Analyste` · `À valider` · `Automaticien` · `Exécutant` · `Anomalies` · `Rapporteur` · `Bloqué`
+   puis Entrée. Recommencer pour chacune de ces 6 colonnes, **avec exactement ces noms** :
+   `Analyste` · `À valider` · `Automaticien` · `Exécutant` · `Anomalies` · `Rapporteur`
 3. Remettre les colonnes dans l'ordre en les faisant glisser par leur titre :
    **À faire → Analyste → À valider → Automaticien → Exécutant → Anomalies → Rapporteur →
-   Terminé → Bloqué**.
-4. La colonne **En cours** ne sert plus : si elle est vide, on peut la supprimer (bouton
-   **•••** en haut de la colonne > *Supprimer*).
+   Terminé**.
+4. Les colonnes **En cours** et **Bloqué** ne servent pas : si elles existent et sont vides,
+   les supprimer (bouton **•••** en haut de la colonne > *Supprimer*). Une story bloquée
+   reste dans la colonne de son agent ; c'est l'étiquette `qa-bloque` qui la signale.
 
 Dans ce type de projet, créer une colonne crée aussi le statut du même nom : c'est lui que n8n
 utilise. Une colonne oubliée ne bloque jamais le cycle : le journal affiche alors
@@ -170,20 +171,33 @@ vérifier qu'elles sont toutes là.
 
 ## Au quotidien
 
-### L'écran de supervision
+### La Tour de contrôle
 
-Il s'ouvre tout seul dans le navigateur au démarrage de n8n : <http://localhost:5680>.
-Il se met à jour toutes les 3 secondes.
+Elle s'ouvre toute seule dans le navigateur au démarrage de n8n : <http://localhost:5680>.
+Elle se met à jour toutes les 3 secondes ; les résultats Squash sont relus chaque minute.
+Chaque agent y est un **robot** de sa couleur : 🔵 Analyste, 🟣 Automaticien,
+🟠 Exécutant, 🔴 Gestionnaire d'anomalies, 🟢 Rapporteur. Couleur vive et yeux qui
+clignotent : il travaille. Couleur pâle : il attend. Gris avec un « ! » : il est bloqué.
 
-- **L'équipe** : pour chaque agent, s'il est *au travail* (sur quelle story, ce qu'il fait
-  en ce moment et depuis quand), s'il *attend son tour*, ou s'il est *libre* (avec son
-  dernier travail).
-- **Les stories, étape par étape** : les mêmes colonnes que le tableau Jira. Quand une story
-  change d'étape, sa carte glisse vers sa nouvelle colonne. Une story en attente de vous
-  affiche un bouton **Valider le cas →**. Un clic sur une carte ouvre sa fiche de suivi.
-- **Le fil d'activité** : le journal des tâches, le plus récent en haut, filtrable par story.
+- **Le bandeau jaune** : un cas de test attend votre validation (voir plus bas).
+- **Le niveau de qualité** : une jauge, calculée sur les tests réussis parmi les tests joués
+  dans l'itération Squash. ● Excellent : 95 % ou plus · ● Bon : de 70 à 95 % ·
+  ▲ Fragile : de 50 à 70 % · ■ Insuffisant : moins de 50 %. « Provisoire » tant qu'une
+  story suivie n'a pas encore été testée.
+- **L'interprétation** : l'onglet *Lecture rapide* l'écrit avec des règles fixes (gratuit,
+  immédiat). L'onglet *✦ Analyse de Claude* propose un bouton : Claude relit résultats, bugs
+  et journal, puis explique les risques et les priorités (20 à 40 secondes, consomme un peu
+  de votre abonnement Claude). La dernière analyse reste affichée avec sa date.
+- **Le parcours des stories** : les mêmes colonnes que le tableau Jira (À faire, une par
+  agent, À valider, Terminé). Une story bloquée reste dans la colonne de son agent, avec un
+  bandeau rouge qui donne la raison. Un clic sur une carte ouvre sa fiche de suivi.
+- **Les résultats des tests** : réussis / échoués / pas encore testés, une case par story,
+  et les bugs signalés dans Jira.
+- **Le journal des activités** : tout ce que font les agents et n8n, le plus récent en
+  haut. Les petits robots servent de filtre.
 
-En haut à droite, deux pastilles disent si n8n et Squash sont allumés.
+En haut à droite, deux pastilles disent si n8n et Squash sont allumés. L'itération Squash
+suivie est celle de la boîte **Réglages** du flux 1 (ou la variable `SQUASH_ITERATION_ID`).
 
 ### Lancer le test d'une ou plusieurs stories
 
@@ -241,16 +255,19 @@ montre ce que l'agent a répondu : son résumé et la prochaine action.
 
 ### Valider un cas de test
 
-Quand une story passe à `qa-a-valider`, Claude vous donne dans la conversation **le lien
-du formulaire de validation** (si vous le lui demandez, ou s'il suit l'avancement). Le même
-lien est dans le commentaire Jira de la story et dans sa fiche de suivi.
+Quand une story passe à `qa-a-valider`, un **bandeau jaune** apparaît en haut de la Tour de
+contrôle, avec le robot Analyste qui lève la main.
 
-1. Ouvrir Squash et relire le cas de test indiqué (statut « À approuver »).
-2. Ouvrir le lien du formulaire, choisir **Approuver**, ou **Refuser** en écrivant ce qu'il
-   faut corriger.
+1. Cliquer sur **Examiner le cas** : un panneau s'ouvre avec les pas du cas de test, lus dans
+   Squash (et un lien vers la fiche de suivi, qui liste les points à surveiller).
+2. Cliquer sur **Approuver**, ou écrire ce qu'il faut corriger puis cliquer sur **Refuser**.
+   La Tour transmet votre réponse à n8n, exactement comme le formulaire.
    - **Approuver** : le cas passe « Approuvé » dans Squash et les agents suivants démarrent.
    - **Refuser** : l'agent analyste corrige le cas selon vos remarques, puis vous redemande
-     une validation. Le lien du formulaire reste le même.
+     une validation.
+
+Le formulaire n8n reste utilisable si besoin : son lien est dans le commentaire Jira de la
+story, dans sa fiche de suivi, et en bas du panneau de validation.
 
 ### Une story est bloquée (`qa-bloque`)
 
@@ -276,7 +293,7 @@ story précise**. Pratique en formation, sans passer par Claude.
 | L'agent exécutant bloque sur Squash | Docker Desktop éteint | Démarrer Docker Desktop, attendre 2 min, puis « relance HVC-x » |
 | Claude dit que n8n refuse la demande (« not registered ») | Flux 1 non publié, ou n8n vient de démarrer | Attendre 30 s ; sinon étape 7 |
 | Le lien du formulaire ne s'ouvre pas | n8n arrêté | Relancer `demarrer-n8n.cmd` : l'exécution en attente est conservée |
-| L'écran de supervision ne s'ouvre pas | Sa petite fenêtre « Supervision GIPHAR » a été fermée | Relancer `demarrer-n8n.cmd`, ou `node supervision/serveur-supervision.mjs` |
+| La Tour de contrôle ne s'ouvre pas | Sa petite fenêtre « Tour de contrôle GIPHAR » a été fermée | Relancer `demarrer-n8n.cmd`, ou `node supervision/serveur-supervision.mjs` |
 | Journal : « ⚠ colonne Jira … introuvable » | Colonne absente du tableau Jira | Étape 8 |
 
 ## Coût

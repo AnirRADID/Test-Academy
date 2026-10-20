@@ -1535,94 +1535,6 @@
           "waitForSubWorkflow": true
         }
       }
-    },
-    {
-      "id": "bfa3a1d8-d4b1-40a9-80d6-1caf3f427009",
-      "name": "🗂 Jira : colonne Bloqué",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "typeVersion": 1.2,
-      "position": [
-        4348,
-        220
-      ],
-      "onError": "continueRegularOutput",
-      "parameters": {
-        "workflowId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "QaHomeyDeplacerT",
-          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
-            "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
-            "colonne": "Bloqué",
-            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
-            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "cleStory",
-              "displayName": "cleStory",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "titreStory",
-              "displayName": "titreStory",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "colonne",
-              "displayName": "colonne",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "jiraSite",
-              "displayName": "jiraSite",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "dossierProjet",
-              "displayName": "dossierProjet",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": true
-        },
-        "mode": "once",
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      }
     }
   ],
   "connections": {
@@ -2052,11 +1964,6 @@
           },
           {
             "node": "📓 Journal : cycle interrompu",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "🗂 Jira : colonne Bloqué",
             "type": "main",
             "index": 0
           }

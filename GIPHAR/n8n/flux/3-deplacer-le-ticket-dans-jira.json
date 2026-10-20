@@ -15,7 +15,7 @@
         "color": 7,
         "width": 1500,
         "height": 200,
-        "content": "## QA Homey — 3. Déplacer le ticket dans Jira\nAppelé par le flux « 2. Cycle d'une story » à chaque étape : fait passer le ticket dans la colonne de l'agent qui prend le relais (Analyste, À valider, Automaticien, Exécutant, Anomalies, Rapporteur, Terminé, Bloqué).\n\nLes colonnes doivent exister dans le tableau Jira du projet HVC (voir n8n/README.md). Une colonne manquante ne bloque jamais le cycle : elle est signalée par une ligne ⚠ dans le journal."
+        "content": "## QA Homey — 3. Déplacer le ticket dans Jira\nAppelé par le flux « 2. Cycle d'une story » à chaque étape : fait passer le ticket dans la colonne de l'agent qui prend le relais (Analyste, À valider, Automaticien, Exécutant, Anomalies, Rapporteur, Terminé). Une story bloquée reste dans la colonne de son agent : seule l’étiquette qa-bloque la signale.\n\nLes colonnes doivent exister dans le tableau Jira du projet HVC (voir n8n/README.md). Une colonne manquante ne bloque jamais le cycle : elle est signalée par une ligne ⚠ dans le journal."
       }
     },
     {

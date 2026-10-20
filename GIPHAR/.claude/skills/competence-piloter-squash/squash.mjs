@@ -11,10 +11,10 @@
  * Commandes du cycle par story (utilisees par les agents, voir .claude/agents/) :
  *   ajouter-story <fichier.json>          exigence miroir (si absente) + cas de test « A approuver »
  *   modifier-cas <fichier.json>           reecrit nom, description, prerequis et pas d'un cas
- *   lire-cas <reference>                  le cas et ses pas, en clair
+ *   lire-cas <reference> [--json]         le cas et ses pas, en clair (ou en JSON)
  *   statut <reference> <EN_COURS|A_APPROUVER|APPROUVE>
  *   ajouter-au-plan <reference> <iteration_id>
- *   resultats <iteration_id>              statut de chaque cas du plan + derniere execution
+ *   resultats <iteration_id> [--json]     statut de chaque cas du plan + derniere execution
  *   bilan-iteration <iteration_id> <fichier.html>   ajoute un bilan date en tete de la description
  *
  * Le jeton n'est JAMAIS passe en argument (il resterait visible dans la liste des
@@ -293,10 +293,13 @@ const commandes = {
     console.log(`cas ${cas.reference} reecrit : ${cas.pas.length} pas, statut « A approuver »`);
   },
 
-  async 'lire-cas'(ref) {
-    if (!ref) throw new Error('Usage : lire-cas TC-HVC-6');
+  async 'lire-cas'(ref, format) {
+    if (!ref) throw new Error('Usage : lire-cas TC-HVC-6 [--json]');
     const c = await casParReference(await projetHomey(), ref);
     const pas = (await appel('GET', `test-cases/${c.id}/steps?size=200`))?._embedded?.steps || [];
+    if (format === '--json') return console.log(JSON.stringify({
+      reference: c.reference, nom: c.name, statut: c.status, description: c.description || '',
+      pas: pas.map(s => ({ action: s.action, attendu: s.expected_result })) }));
     console.log(`${c.reference} — ${c.name}   (id ${c.id}, statut ${c.status})`);
     console.log(`automatise sous : ${c.automated_test_reference || '—'}`);
     console.log(`exigence(s)     : ${(c.verified_requirements || []).map(v => v.name || `#${v.id}`).join(', ') || '—'}`);
@@ -321,9 +324,15 @@ const commandes = {
     console.log(`${ref} ajoute au plan de l'iteration ${iterationId}.`);
   },
 
-  async resultats(iterationId) {
-    if (!iterationId) throw new Error('Usage : resultats <iteration_id>');
+  async resultats(iterationId, format) {
+    if (!iterationId) throw new Error('Usage : resultats <iteration_id> [--json]');
     const plan = await planDeLIteration(iterationId);
+    if (format === '--json') {
+      const it = await appel('GET', `iterations/${iterationId}`);
+      return console.log(JSON.stringify({ iteration: { id: Number(iterationId), nom: it.name },
+        cas: plan.map(i => ({ reference: i.referenced_test_case?.reference || null, nom: i.referenced_test_case?.name || '',
+          statut: i.execution_status, derniereExecution: i.executions?.at(-1)?.last_executed_on || null })) }));
+    }
     const compte = {};
     for (const i of plan) compte[i.execution_status] = (compte[i.execution_status] || 0) + 1;
     console.log(`Iteration ${iterationId} — ${plan.length} cas : ` +
