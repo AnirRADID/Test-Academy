@@ -76,7 +76,7 @@ votre machine.
 ### 2. Faire confiance au projet (une seule fois)
 
 Les agents n'ont le droit d'agir sans vous demander la permission que si Claude Code a
-reçu votre accord pour ce projet. Dans le terminal, depuis le dossier `homey-playwright` :
+reçu votre accord pour ce projet. Dans le terminal, depuis le dossier `GIPHAR` :
 
 ```
 claude
@@ -88,7 +88,7 @@ finissent « bloqués ».
 
 ### 3. Importer les deux flux
 
-Toujours dans le terminal, depuis le dossier `homey-playwright` :
+Toujours dans le terminal, depuis le dossier `GIPHAR` :
 
 ```
 n8n import:workflow --separate --input=n8n/flux

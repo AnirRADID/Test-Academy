@@ -1,5 +1,5 @@
 {
-  "name": "homey-playwright",
+  "name": "giphar",
   "private": true,
   "scripts": {
     "test": "playwright test"
