@@ -4,7 +4,7 @@
 
 > Ce module n'est pas encore rédigé sous sa forme finale. Voici le plan détaillé. Il
 > reprend, reformulé en prompts autonomes (sans skill à importer), le processus déjà validé
-> dans `.claude/skills/homey-qa/` de ce dépôt.
+> dans `.claude/skills/competence-regles-qualite-homey/` de ce dépôt.
 
 ## Objectif
 

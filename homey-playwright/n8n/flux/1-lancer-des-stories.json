@@ -1,0 +1,344 @@
+{
+  "id": "QaHomeyRondeJira",
+  "name": "QA Homey - 1. Lancer des stories",
+  "nodes": [
+    {
+      "id": "57e4c593-ed2f-4ef4-9b17-aa2fbe69da7c",
+      "name": "Note lancement",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -260
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1400,
+        "height": 230,
+        "content": "## QA Homey — 1. Lancer des stories\nVous dites à Claude, dans la conversation : « teste HVC-8 et HVC-9 ». Claude vérifie que les stories existent, puis envoie la liste à la boîte **Stories demandées depuis Claude**.\n\nPour chaque story : lecture dans Jira, étiquette **qa-en-cours** posée automatiquement, puis démarrage du flux « 2. Cycle d'une story ». Vous ne posez jamais d'étiquette vous-même.\n\nTout est noté dans `suivi-des-stories/journal-des-taches.md`."
+      }
+    },
+    {
+      "id": "7e100330-ddff-4164-a059-7e890df93389",
+      "name": "Stories demandées depuis Claude",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        100
+      ],
+      "webhookId": "7ea8febb-6daa-4aa6-8b90-a982cbbc6ae5",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "qa-homey-lancer-des-stories",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "f8be65b6-2212-4c24-96db-4366932b547c",
+      "name": "📓 Journal : demande reçue",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -60
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "command": "=cd /d \"{{ $('Réglages').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"—\" \"n8n\" \"demande reçue depuis Claude : {{ String([].concat($('Stories demandées depuis Claude').first().json.body.stories || []).join(', ') || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }}\""
+      }
+    },
+    {
+      "id": "09894d25-2c3e-4eec-be51-2d45eaf28e20",
+      "name": "Une story à la fois",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// La liste envoyee par Claude : { \"stories\": [\"HVC-8\", \"HVC-9\"] } (ou \"HVC-8, HVC-9\").\nconst corps = $('Stories demandées depuis Claude').first().json.body || {};\nconst brut = Array.isArray(corps.stories) ? corps.stories : String(corps.stories || '').split(/[\\s,;]+/);\nconst cles = [...new Set(brut.map(c => String(c).trim().toUpperCase()).filter(c => /^[A-Z][A-Z0-9]+-\\d+$/.test(c)))];\nreturn cles.map(key => ({ json: { key } }));"
+      }
+    },
+    {
+      "id": "04e9d482-4555-4f82-976d-b09898b96617",
+      "name": "Jira : lire la story",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Réglages').first().json.jiraSite }}/rest/api/3/issue/{{ $json.key }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "summary"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "e68e44d2-a883-4c54-a6f8-ab0001d47010",
+      "name": "📓 Journal : story introuvable",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "command": "=cd /d \"{{ $('Réglages').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ $('Une story à la fois').item.json.key }}\" \"n8n\" \"⚠ story introuvable dans Jira : aucun cycle lancé\"",
+        "executeOnce": false
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5790a9aa-320e-4005-b6e7-76732e3c3a1f",
+              "name": "jiraSite",
+              "value": "https://testacademy.atlassian.net",
+              "type": "string"
+            },
+            {
+              "id": "e4bde2cd-bfc0-4621-877d-11cc63597069",
+              "name": "projetJira",
+              "value": "HVC",
+              "type": "string"
+            },
+            {
+              "id": "04c57dba-850d-4d3a-b776-c6f51445fd70",
+              "name": "iterationSquash",
+              "value": "1",
+              "type": "string"
+            },
+            {
+              "id": "54f93d6c-18eb-4b86-9c13-c02c779534cd",
+              "name": "dossierProjet",
+              "value": "C:\\Dev\\Test-Academy\\homey-playwright",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fcf53f49-315b-4788-80a8-d20d9b012a14",
+      "name": "Réglages",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Réglages').first().json.jiraSite }}/rest/api/3/issue/{{ $json.key }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"update\":{\"labels\":[{\"remove\":\"qa-auto\"},{\"remove\":\"qa-termine\"},{\"remove\":\"qa-bloque\"},{\"remove\":\"qa-a-valider\"},{\"add\":\"qa-en-cours\"}]}}",
+        "options": {}
+      },
+      "id": "e979c1b2-8b1e-4c49-b443-a552cb37eb96",
+      "name": "Jira : étiquette qa-en-cours",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cd54c6ab-13b4-46de-92bb-390566b84e02",
+              "name": "cleStory",
+              "value": "={{ $('Jira : lire la story').item.json.key }}",
+              "type": "string"
+            },
+            {
+              "id": "57b53c4c-03aa-4787-b628-7e6f8a4e9c7c",
+              "name": "titreStory",
+              "value": "={{ $('Jira : lire la story').item.json.fields.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "5060bbfa-1af8-4379-a8d6-e238b91c66ae",
+              "name": "jiraSite",
+              "value": "={{ $('Réglages').first().json.jiraSite }}",
+              "type": "string"
+            },
+            {
+              "id": "0edfd3dc-bd5b-4745-8fd6-0b82d63b4f0a",
+              "name": "iterationSquash",
+              "value": "={{ $('Réglages').first().json.iterationSquash }}",
+              "type": "string"
+            },
+            {
+              "id": "5fcd75ae-4193-4d5e-81f6-f5787d0d650b",
+              "name": "dossierProjet",
+              "value": "={{ $('Réglages').first().json.dossierProjet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "58faaa5a-1aa9-4ace-bb0c-7bd300b46397",
+      "name": "Infos de la story",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1400,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyCycleStry",
+          "cachedResultName": "QA Homey - 2. Cycle d'une story"
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "id": "d67888d7-bcf5-4849-bce3-aba546f90662",
+      "name": "Démarrer le cycle de la story",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        100
+      ]
+    },
+    {
+      "id": "3f848ae1-27e1-4872-b0b7-77b94376a660",
+      "name": "📓 Journal : story repérée",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -60
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $json.cleStory }})\" \"n8n\" \"demandée depuis Claude : étiquette qa-en-cours posée automatiquement, cycle lancé\"",
+        "executeOnce": false
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Stories demandées depuis Claude": {
+      "main": [
+        [
+          {
+            "node": "Réglages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réglages": {
+      "main": [
+        [
+          {
+            "node": "📓 Journal : demande reçue",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Une story à la fois",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Une story à la fois": {
+      "main": [
+        [
+          {
+            "node": "Jira : lire la story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : lire la story": {
+      "main": [
+        [
+          {
+            "node": "Jira : étiquette qa-en-cours",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📓 Journal : story introuvable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : étiquette qa-en-cours": {
+      "main": [
+        [
+          {
+            "node": "Infos de la story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Infos de la story": {
+      "main": [
+        [
+          {
+            "node": "📓 Journal : story repérée",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Démarrer le cycle de la story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false,
+  "pinData": {}
+}

@@ -11,5 +11,6 @@ export default defineConfig({
   use: {
     baseURL: 'http://livraison3.testacademy.fr',
     trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
   },
 });

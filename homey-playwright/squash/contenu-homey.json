@@ -57,6 +57,56 @@
    "status": "APPROVED",
    "category": "CAT_FUNCTIONAL",
    "couvert_par": ["TC-HVC-5 - Navigation par type de logement"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-6",
+   "name": "HVC-6 - Inscription d'un nouveau compte",
+   "description": "En tant que visiteur, je veux creer un compte avec nom d'utilisateur, email et mot de passe, afin de pouvoir reserver ou devenir hote. Le formulaire exige la confirmation du mot de passe et l'acceptation des conditions. Ticket Jira : HVC-6.",
+   "criticality": "CRITICAL",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-6 - Inscription d'un nouveau compte"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-7",
+   "name": "HVC-7 - Connexion utilisateur",
+   "description": "En tant qu'utilisateur enregistre, je veux me connecter avec mon identifiant et mon mot de passe, afin d'acceder a mon espace personnel. Option « se souvenir de moi » disponible. Ticket Jira : HVC-7.",
+   "criticality": "CRITICAL",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-7 - Connexion utilisateur"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-8",
+   "name": "HVC-8 - Reinitialisation du mot de passe",
+   "description": "En tant qu'utilisateur ayant oublie son mot de passe, je veux demander une reinitialisation via mon email, afin de retrouver l'acces a mon compte. Ticket Jira : HVC-8.",
+   "criticality": "MAJOR",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-8 - Reinitialisation du mot de passe"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-9",
+   "name": "HVC-9 - Devenir hote",
+   "description": "En tant que proprietaire, je veux acceder a un parcours dedie « Devenir un hote », afin de proposer mon propre logement a la location. Ticket Jira : HVC-9.",
+   "criticality": "MAJOR",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-9 - Devenir hote"]
+  },
+  {
+   "dossier": ["Exigences Jira"],
+   "reference": "HVC-10",
+   "name": "HVC-10 - Comparer des annonces",
+   "description": "En tant que voyageur hesitant entre plusieurs logements, je veux comparer des annonces entre elles, afin de choisir plus facilement. Ticket Jira : HVC-10.",
+   "criticality": "MINOR",
+   "status": "APPROVED",
+   "category": "CAT_FUNCTIONAL",
+   "couvert_par": ["TC-HVC-10 - Comparer des annonces"]
   }
  ],
  "cas_de_test": [
@@ -156,6 +206,105 @@
     {
      "action": "Depuis la page d'accueil, cliquer sur une categorie de logement (Studio).",
      "expected_result": "La page liste uniquement les logements du type selectionne : l'URL contient /type/studio."
+    }
+   ]
+  },
+  {
+   "dossier": ["Compte"],
+   "reference": "TC-HVC-6",
+   "name": "TC-HVC-6 - Inscription d'un nouveau compte",
+   "description": "Automatise par tests/tc-hvc-6-inscription-compte.spec.ts. Verifie l'exigence HVC-6.",
+   "prerequisite": "",
+   "importance": "HIGH",
+   "verifie": ["HVC-6 - Inscription d'un nouveau compte"],
+   "steps": [
+    {
+     "action": "Ouvrir la page d'accueil, cliquer sur S'inscrire, remplir le formulaire avec nom d'utilisateur, email, mot de passe et confirmation identiques, accepter les conditions, puis valider.",
+     "expected_result": "Le compte est cree (ou l'utilisateur est connecte)."
+    },
+    {
+     "action": "Rouvrir le formulaire d'inscription et le remplir avec un mot de passe et une confirmation differents, puis valider.",
+     "expected_result": "Un message d'erreur signale que les mots de passe ne correspondent pas."
+    }
+   ]
+  },
+  {
+   "dossier": ["Compte"],
+   "reference": "TC-HVC-7",
+   "name": "TC-HVC-7 - Connexion utilisateur",
+   "description": "Automatise par tests/tc-hvc-7-connexion-utilisateur.spec.ts. Verifie l'exigence HVC-7.",
+   "prerequisite": "",
+   "importance": "HIGH",
+   "verifie": ["HVC-7 - Connexion utilisateur"],
+   "steps": [
+    {
+     "action": "Ouvrir la page d'accueil, cliquer sur Se connecter, saisir des identifiants valides, cocher Se souvenir de moi, puis valider.",
+     "expected_result": "L'utilisateur est connecte : le lien Se connecter n'est plus visible."
+    },
+    {
+     "action": "Se deconnecter puis se connecter avec des identifiants invalides.",
+     "expected_result": "Un message d'erreur clair indique que les identifiants sont incorrects."
+    }
+   ]
+  },
+  {
+   "dossier": ["Compte"],
+   "reference": "TC-HVC-8",
+   "name": "TC-HVC-8 - Reinitialisation du mot de passe",
+   "description": "Automatise par tests/tc-hvc-8-mot-de-passe-oublie.spec.ts. Verifie l'exigence HVC-8.",
+   "prerequisite": "",
+   "importance": "MEDIUM",
+   "verifie": ["HVC-8 - Reinitialisation du mot de passe"],
+   "steps": [
+    {
+     "action": "Ouvrir la page d'accueil, cliquer sur Se connecter puis sur « mot de passe oublie ? ».",
+     "expected_result": "Le formulaire de reinitialisation s'affiche, demandant l'email ou l'identifiant."
+    },
+    {
+     "action": "Saisir un email et cliquer sur Soumettre.",
+     "expected_result": "Un message confirme la soumission de la demande de reinitialisation."
+    }
+   ]
+  },
+  {
+   "dossier": ["Hote"],
+   "reference": "TC-HVC-9",
+   "name": "TC-HVC-9 - Devenir hote",
+   "description": "Automatise par tests/tc-hvc-9-devenir-hote.spec.ts. Verifie l'exigence HVC-9.",
+   "prerequisite": "",
+   "importance": "MEDIUM",
+   "verifie": ["HVC-9 - Devenir hote"],
+   "steps": [
+    {
+     "action": "Depuis la page d'accueil, cliquer sur le lien Devenir un hote.",
+     "expected_result": "La page dediee Devenir un hote s'affiche (URL contenant become-a-host)."
+    },
+    {
+     "action": "Observer le contenu de la page.",
+     "expected_result": "Le parcours ou le formulaire pour publier une annonce est presente (titre Become a Host visible)."
+    }
+   ]
+  },
+  {
+   "dossier": ["Recherche de logement"],
+   "reference": "TC-HVC-10",
+   "name": "TC-HVC-10 - Comparer des annonces",
+   "description": "Automatise par tests/tc-hvc-10-comparer-annonces.spec.ts. Verifie l'exigence HVC-10.",
+   "prerequisite": "",
+   "importance": "LOW",
+   "verifie": ["HVC-10 - Comparer des annonces"],
+   "steps": [
+    {
+     "action": "Lancer une recherche affichant plusieurs logements, puis selectionner deux logements pour la comparaison.",
+     "expected_result": "Le compteur de comparaison affiche 2 logements selectionnes."
+    },
+    {
+     "action": "Ouvrir le panneau de comparaison.",
+     "expected_result": "Les deux logements selectionnes y apparaissent."
+    },
+    {
+     "action": "Cliquer sur Comparer.",
+     "expected_result": "La page de comparaison s'affiche avec les logements choisis (URL contenant /compare/)."
     }
    ]
   }

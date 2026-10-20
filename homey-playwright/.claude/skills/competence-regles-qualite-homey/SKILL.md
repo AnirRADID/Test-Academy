@@ -1,8 +1,13 @@
-# homey-qa — le cycle industrialisé Jira -> Squash -> Playwright -> triage
+---
+name: competence-regles-qualite-homey
+description: Les règles du cycle qualité Homey (projet Jira HVC) — exigence miroir, cas de test Squash avant automatisation, test Playwright, campagne, exécution, triage des échecs sans doublon Jira. A charger dès qu'il est question d'ajouter une exigence ou un cas de test HVC, de lancer une campagne ou de trier des échecs.
+---
+
+# Compétence : les règles du cycle qualité Homey (Jira -> Squash -> Playwright -> triage)
 
 Capitalise le cycle complet construit sur le projet Homey (HVC) : exigence miroir, cas de
 test Squash **avant** son automatisation, test Playwright, campagne, exécution, puis
-**triage des échecs sans doublon**. S'appuie sur le skill `squash` (appels REST bruts) et
+**triage des échecs sans doublon**. S'appuie sur la compétence `competence-piloter-squash` (appels REST bruts) et
 sur le connecteur Atlassian MCP déjà disponible dans la session — ne les réinvente pas.
 
 Charger ce skill dès qu'il est question : d'ajouter une exigence/un cas de test au projet
@@ -11,7 +16,7 @@ HVC, de lancer ou relancer une campagne, ou de trier les échecs d'une itératio
 ## Le cycle, dans l'ordre
 
 1. **Exigence** — miroir d'une story/bug Jira dans Squash (`current_version` avant `name`,
-   parent = le projet). Voir le skill `squash`.
+   parent = le projet). Voir la compétence `competence-piloter-squash`.
 2. **Cas de test AVANT le test automatisé** — écrire le cas dans Squash (`action` /
    `expected_result` en langage testeur, pas en appels techniques), couverture posée à la
    création (`verified_requirements`). C'est ce texte qui sert ensuite de plan au test
@@ -21,15 +26,17 @@ HVC, de lancer ou relancer une campagne, ou de trier les échecs d'une itératio
    contre l'application réelle avant d'être considéré fini** — lire `reference/conventions.md`
    avant d'écrire un sélecteur, la plupart des surprises y sont déjà documentées.
 4. **Campagne / itération** — un plan d'exécution qui ne contient que les cas du sprint
-   courant. Reconstruire le plan quand le contenu du sprint change (cf. `squash` skill).
+   courant. Reconstruire le plan quand le contenu du sprint change (cf. `competence-piloter-squash`).
 5. **Exécution** — `npx playwright test` SANS `--reporter=` en ligne de commande (voir
-   conventions). `reporters/squash-reporter.ts` importe les résultats automatiquement.
+   conventions). `reporters/squash-reporter.ts` importe les résultats automatiquement,
+   **à condition** que `SQUASH_TOKEN` soit défini : pour une exécution qui doit remonter
+   dans Squash, passer par `node .claude/skills/competence-regles-qualite-homey/scripts/lancer-campagne.mjs <iteration_id>`.
 6. **Triage** — décrit ci-dessous.
 
 ## Triage des échecs (avec déduplication)
 
 ```
-node .claude/skills/homey-qa/scripts/lister-echecs.mjs <iteration_id>
+node .claude/skills/competence-regles-qualite-homey/scripts/lister-echecs.mjs <iteration_id>
 ```
 
 Liste chaque cas `FAILURE` de l'itération : référence, exigence(s) couverte(s), id de la
@@ -55,7 +62,7 @@ Pour chaque échec listé :
    (`labels: ["TC-XXX", ...]` — c'est cette étiquette que la déduplication relit).
 3. **Dans tous les cas**, poser la liaison côté Squash :
    ```
-   node .claude/skills/homey-qa/scripts/squash-side.mjs <execution_id> <JIRA-KEY> <chemin_capture.png> "<explication courte>"
+   node .claude/skills/competence-regles-qualite-homey/scripts/squash-side.mjs <execution_id> <JIRA-KEY> <chemin_capture.png> "<explication courte>"
    ```
    Génère un PDF (capture + explication — les pièces jointes d'exécution n'acceptent que
    `.txt`/`.pdf` sur cette instance, voir conventions), l'attache à l'exécution, et pose un

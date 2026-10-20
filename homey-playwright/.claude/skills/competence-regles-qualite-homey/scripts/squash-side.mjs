@@ -2,7 +2,7 @@
 /**
  * squash-side.mjs — pose la moitie Squash de la tracabilite bidirectionnelle d'un bug.
  *
- *   node .claude/skills/homey-qa/scripts/squash-side.mjs <execution_id> <JIRA-KEY> <capture.png> "<explication>"
+ *   node .claude/skills/competence-regles-qualite-homey/scripts/squash-side.mjs <execution_id> <JIRA-KEY> <capture.png> "<explication>"
  *
  * Fait deux choses sur l'execution Squash en echec :
  *   1. Genere un PDF (capture d'ecran + explication + reference Jira) et l'attache a

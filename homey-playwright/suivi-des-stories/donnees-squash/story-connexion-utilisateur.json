@@ -1,0 +1,26 @@
+{
+  "story_jira": "HVC-7",
+  "exigence": {
+    "nom": "HVC-7 - Connexion utilisateur",
+    "description": "En tant qu'utilisateur enregistré, je veux me connecter avec mon identifiant et mon mot de passe, afin d'accéder à mon espace personnel.\n\nCritères d'acceptation :\n- Le formulaire de connexion accepte nom d'utilisateur ou email + mot de passe.\n- Une option « se souvenir de moi » (case Remember) prolonge la session.\n- Des identifiants invalides affichent un message d'erreur clair.",
+    "criticite": "CRITICAL"
+  },
+  "cas": {
+    "reference": "TC-HVC-7",
+    "nom": "TC-HVC-7 - Connexion utilisateur",
+    "description": "Automatise par tests/tc-hvc-7-connexion-utilisateur.spec.ts. Verifie l exigence HVC-7.",
+    "prerequis": "",
+    "importance": "HIGH",
+    "pas": [
+      {
+        "action": "Ouvrir la page d'accueil, cliquer sur Se connecter, saisir des identifiants valides, cocher Se souvenir de moi, puis valider.",
+        "resultat_attendu": "L'utilisateur est connecte : le lien Se connecter n'est plus visible."
+      },
+      {
+        "action": "Se deconnecter puis se connecter avec des identifiants invalides.",
+        "resultat_attendu": "Un message d erreur clair indique que les identifiants sont incorrects."
+      }
+    ]
+  },
+  "iteration_id": 1
+}

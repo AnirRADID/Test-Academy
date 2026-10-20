@@ -2,7 +2,7 @@
 /**
  * lister-echecs.mjs — base factuelle du triage : les cas en echec d'une iteration Squash.
  *
- *   node .claude/skills/homey-qa/scripts/lister-echecs.mjs <iteration_id>
+ *   node .claude/skills/competence-regles-qualite-homey/scripts/lister-echecs.mjs <iteration_id>
  *
  * Pour chaque cas FAILURE : sa reference, l'exigence qu'il couvre (reference Jira miroir),
  * et l'id de sa DERNIERE execution (une nouvelle execution est creee a chaque run : c'est

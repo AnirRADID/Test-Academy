@@ -1,17 +1,11 @@
 {
   "name": "homey-playwright",
-  "version": "1.0.0",
-  "description": "Tests Playwright Homey - fil rouge Test Academy (CT-06, CT-08)",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "playwright test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
-    "@playwright/test": "^1.63.0",
-    "@types/node": "^26.5.0",
-    "typescript": "^5.9.3"
+    "@playwright/test": "^1.48.0",
+    "typescript": "^5.6.0"
   }
 }

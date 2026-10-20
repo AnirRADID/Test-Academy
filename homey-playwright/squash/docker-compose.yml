@@ -33,7 +33,7 @@ services:
       retries: 20
 
   squash:
-    image: squashtest/squash:14.0.4
+    image: squashtest/squash:15.0.0
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }

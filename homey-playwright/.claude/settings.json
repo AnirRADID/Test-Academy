@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill",
+      "Bash(node .claude/skills/*)",
+      "Bash(npx playwright test*)",
+      "mcp__claude_ai_Atlassian_MCP__getAccessibleAtlassianResources",
+      "mcp__claude_ai_Atlassian_MCP__getJiraIssue",
+      "mcp__claude_ai_Atlassian_MCP__searchJiraIssuesUsingJql",
+      "mcp__claude_ai_Atlassian_MCP__createJiraIssue",
+      "mcp__claude_ai_Atlassian_MCP__editJiraIssue",
+      "mcp__claude_ai_Atlassian_MCP__addOrEditJiraIssueComment",
+      "mcp__claude_ai_Atlassian_MCP__transitionJiraIssue",
+      "mcp__claude_ai_Atlassian_MCP__discover",
+      "mcp__claude_ai_Atlassian_MCP__executeRead",
+      "mcp__claude_ai_Atlassian_MCP__executeWrite"
+    ],
+    "deny": [
+      "Bash(git push*)",
+      "Bash(rm -rf*)",
+      "Bash(npx playwright test*--reporter*)",
+      "mcp__claude_ai_Atlassian_MCP__executeDestructive",
+      "Read(squash/.token)",
+      "Read(squash/.env)"
+    ]
+  }
+}

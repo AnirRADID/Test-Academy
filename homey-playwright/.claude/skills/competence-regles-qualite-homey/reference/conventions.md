@@ -11,7 +11,7 @@ projet. A lire avant d'écrire un sélecteur, un test ou un ticket. Organisé pa
   faire échouer `RestApiJwtSecretKeyManager` avec `Illegal base64 character` côté serveur
   — et à empêcher Squash de fabriquer *ou* de vérifier un jeton, en silence). Vérifier avec
   `xxd` après écriture si le fichier a été construit par un outil externe.
-- **Fallback projet** (`squash.mjs` / `homey-qa`) : les scripts cherchent un projet nommé
+- **Fallback projet** (`squash.mjs` / scripts de `competence-regles-qualite-homey`) : les scripts cherchent un projet nommé
   exactement, puis retombent sur le premier projet de l'instance. Ne marche que s'il n'y a
   qu'un seul projet — explicite sinon.
 - **Couverture d'un cas de test** : ne se pose **qu'à la création** du cas

@@ -1,0 +1,1247 @@
+{
+  "id": "QaHomeyCycleStry",
+  "name": "QA Homey - 2. Cycle d'une story",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## QA Homey — 2. Cycle d'une story\nUne exécution de ce flux = **une story**. Les boîtes 🤖 sont les agents Claude, lancés l'un après l'autre.\n\n**⏸ Attendre votre validation** : l'exécution se met en pause (statut *Waiting*). Le lien du formulaire est donné par Claude dans la conversation, et se trouve aussi dans le commentaire Jira de la story et dans sa fiche de suivi. Refuser renvoie le cas à l'analyste avec vos remarques.\n\nSi un agent est bloqué : commentaire dans la story Jira, étiquette **qa-bloque**, et l'exécution s'arrête en rouge.\n\n**📓 Journal** : chaque étape, et chaque action des agents, est notée dans `suivi-des-stories/journal-des-taches.md`.",
+        "height": 260,
+        "width": 1500,
+        "color": 7
+      },
+      "id": "b29adc5e-580b-4a5b-a26f-6f135e03c5b4",
+      "name": "Note cycle",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -448
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Tester sans passer par Claude\nModifier la clé dans **Story de test**, puis cliquer sur **Tester avec une story précise**.",
+        "width": 560,
+        "color": 5
+      },
+      "id": "bd6531d0-cc2a-4be9-8ba3-355f4d030582",
+      "name": "Note test",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "060462d5-6c59-495c-9b2e-78bf2acd3483",
+      "name": "Story reçue",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1d7909b0-7465-411a-bd52-d6add3d768fc",
+      "name": "Tester avec une story précise",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0286caae-eb10-4b6a-9ae6-2259ac9d41d1",
+              "name": "cleStory",
+              "value": "HVC-6",
+              "type": "string"
+            },
+            {
+              "id": "2d54a8ce-e4e2-42c3-ba45-b0e3eee31b88",
+              "name": "titreStory",
+              "value": "Inscription d'un nouveau compte",
+              "type": "string"
+            },
+            {
+              "id": "1fd26c32-7f1b-42ff-bf78-6be353450bc8",
+              "name": "jiraSite",
+              "value": "https://testacademy.atlassian.net",
+              "type": "string"
+            },
+            {
+              "id": "ab18fa74-f915-49b9-b6fb-a6111728a4d1",
+              "name": "iterationSquash",
+              "value": "1",
+              "type": "string"
+            },
+            {
+              "id": "67de1e91-0aca-407d-97c4-5e93f21415a7",
+              "name": "dossierProjet",
+              "value": "C:\\Dev\\Test-Academy\\homey-playwright",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8ff11889-15aa-432e-89f3-86692ae4c39b",
+      "name": "Story de test",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "52469a90-f667-4349-850d-6042e01f63e3",
+              "name": "cleStory",
+              "value": "={{ $json.cleStory }}",
+              "type": "string"
+            },
+            {
+              "id": "12e0f516-577d-4677-9f5a-83069b636d86",
+              "name": "titreStory",
+              "value": "={{ $json.titreStory }}",
+              "type": "string"
+            },
+            {
+              "id": "c7d41e88-3fe7-4289-9004-e1d05d0afdcd",
+              "name": "jiraSite",
+              "value": "={{ $json.jiraSite }}",
+              "type": "string"
+            },
+            {
+              "id": "ff917a7b-74dd-439b-ab6a-8194b3054591",
+              "name": "iterationSquash",
+              "value": "={{ $json.iterationSquash }}",
+              "type": "string"
+            },
+            {
+              "id": "8adcc800-719e-4fd4-943f-afc055b31f12",
+              "name": "dossierProjet",
+              "value": "={{ $json.dossierProjet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "93fe6990-a041-45d8-aad1-8d5cf6688dbe",
+      "name": "Contexte de la story",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/lancer-agent.mjs agent-analyste \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"Story Jira {{ $('Contexte de la story').first().json.cleStory }}. Iteration Squash : {{ $('Contexte de la story').first().json.iterationSquash }}. Lien du formulaire de validation : {{ $execution.resumeFormUrl }} .{{ $json.remarques ? ' Le valideur a REFUSE la version precedente du cas. Ses remarques : ' + String($json.remarques || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') : '' }}\""
+      },
+      "id": "700f46ab-e75c-43f3-a21b-22994540ce82",
+      "name": "🤖 Agent analyste : rédige le cas de test",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        560,
+        112
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lit la reponse finale de agent-analyste (un objet JSON, cf. competence-rediger-comptes-rendus).\nconst sortie = $input.first().json;\nlet reponse = null;\ntry {\n  // la derniere ligne JSON de la sortie : d'eventuels avertissements la precedent\n  const ligne = String(sortie.stdout || '').split(String.fromCharCode(10)).reverse().find(l => l.trim().startsWith('{'));\n  const enveloppe = JSON.parse(ligne);\n  const texte = String(enveloppe.result ?? '');\n  if (!enveloppe.is_error) reponse = JSON.parse(texte.slice(texte.indexOf('{'), texte.lastIndexOf('}') + 1));\n} catch (e) { /* reponse illisible : traitee ci-dessous */ }\nif (!reponse || !reponse.statut) {\n  reponse = {\n    statut: 'bloque',\n    resume: \"L'agent n'a pas renvoyé de réponse lisible.\",\n    prochaine_action: \"Ouvrir cette exécution dans n8n et lire la sortie de la boîte « Agent analyste ».\",\n    sortie_brute: String(sortie.stdout || sortie.stderr || sortie.error || '(aucune sortie)').slice(0, 1500),\n  };\n}\nreturn [{ json: { agent: 'agent-analyste', ...reponse } }];"
+      },
+      "id": "7e7449e2-f95b-4260-bf1c-871947254f52",
+      "name": "Réponse analyste",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3e801c7a-4087-401f-a4b5-bd8e7dedc4fd",
+              "leftValue": "={{ $json.statut }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6ce238dd-8d68-489a-b355-7f57f8503144",
+      "name": "Analyste OK ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Contexte de la story').first().json.jiraSite }}/rest/api/3/issue/{{ $('Contexte de la story').first().json.cleStory }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"update\":{\"labels\":[{\"remove\":\"qa-en-cours\"},{\"add\":\"qa-a-valider\"}]}}",
+        "options": {}
+      },
+      "id": "63252619-940c-4451-bde0-62495939300f",
+      "name": "Jira : étiquette qa-a-valider",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1408,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "resume": "form",
+        "formTitle": "=Validation du cas de test {{ $('Réponse analyste').last().json.reference_cas }}",
+        "formDescription": "=Story : {{ $('Contexte de la story').first().json.titreStory }} ({{ $('Contexte de la story').first().json.cleStory }})\n\nL'agent analyste a rédigé le cas de test {{ $('Réponse analyste').last().json.reference_cas }} dans Squash.\n1. Ouvrez Squash et relisez ce cas (ses étapes et résultats attendus).\n2. Choisissez « Approuver » pour lancer l'automatisation, ou « Refuser » en expliquant ce qu'il faut corriger.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Décision",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approuver"
+                  },
+                  {
+                    "option": "Refuser"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Remarques",
+              "fieldType": "textarea",
+              "placeholder": "Obligatoire si vous refusez : que faut-il corriger ?"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb111157-798d-4bc4-8ec6-5bbbe1d5b6fd",
+      "name": "⏸ Attendre votre validation",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "eac563cb-5202-48a4-bd26-343c3230b067",
+              "leftValue": "={{ $json['Décision'] }}",
+              "rightValue": "Approuver",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00795ffa-0490-42cd-b99f-cdaf27d1488c",
+      "name": "Cas approuvé ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1968,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4b975499-6d00-4f68-a102-18b3d7adb9c9",
+              "name": "remarques",
+              "value": "={{ $json.Remarques || \"Cas refusé sans remarque : le relire entièrement.\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "25d04e62-16a4-4b22-9786-07d1129fa770",
+      "name": "Remarques à transmettre",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1968,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Contexte de la story').first().json.jiraSite }}/rest/api/3/issue/{{ $('Contexte de la story').first().json.cleStory }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"update\":{\"labels\":[{\"remove\":\"qa-a-valider\"},{\"add\":\"qa-en-cours\"}]}}",
+        "options": {}
+      },
+      "id": "5a5e87b6-2e85-4f08-be38-b290b1858275",
+      "name": "Jira : étiquette qa-en-cours",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node .claude/skills/competence-piloter-squash/squash.mjs statut {{ $('Réponse analyste').last().json.reference_cas }} APPROUVE"
+      },
+      "id": "157654d7-5254-4cb0-8e5f-00b223dc5439",
+      "name": "Squash : cas « Approuvé »",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        32
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/lancer-agent.mjs agent-automaticien \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"Story Jira {{ $('Contexte de la story').first().json.cleStory }}. Cas de test valide par un humain : {{ $('Réponse analyste').last().json.reference_cas }}. Fiche de suivi : {{ $('Réponse analyste').last().json.fiche_de_suivi }}. Valide le {{ $now.toFormat('dd/MM/yyyy HH:mm') }}. Remarques du valideur : {{ String($('⏸ Attendre votre validation').last().json.Remarques || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') || 'aucune' }}.\""
+      },
+      "id": "b550dd0f-0b84-4c6c-8361-828d453136c5",
+      "name": "🤖 Agent automaticien : écrit le test",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2800,
+        32
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lit la reponse finale de agent-automaticien (un objet JSON, cf. competence-rediger-comptes-rendus).\nconst sortie = $input.first().json;\nlet reponse = null;\ntry {\n  // la derniere ligne JSON de la sortie : d'eventuels avertissements la precedent\n  const ligne = String(sortie.stdout || '').split(String.fromCharCode(10)).reverse().find(l => l.trim().startsWith('{'));\n  const enveloppe = JSON.parse(ligne);\n  const texte = String(enveloppe.result ?? '');\n  if (!enveloppe.is_error) reponse = JSON.parse(texte.slice(texte.indexOf('{'), texte.lastIndexOf('}') + 1));\n} catch (e) { /* reponse illisible : traitee ci-dessous */ }\nif (!reponse || !reponse.statut) {\n  reponse = {\n    statut: 'bloque',\n    resume: \"L'agent n'a pas renvoyé de réponse lisible.\",\n    prochaine_action: \"Ouvrir cette exécution dans n8n et lire la sortie de la boîte « Agent automaticien ».\",\n    sortie_brute: String(sortie.stdout || sortie.stderr || sortie.error || '(aucune sortie)').slice(0, 1500),\n  };\n}\nreturn [{ json: { agent: 'agent-automaticien', ...reponse } }];"
+      },
+      "id": "3c3dfd2c-da4d-4256-b965-21b32de21a30",
+      "name": "Réponse automaticien",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3088,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fd3c84d8-4850-47fb-8b61-c79e5c35f33c",
+              "leftValue": "={{ $json.statut }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "75f0529a-41c7-4249-9037-1261ced7fa30",
+      "name": "Automaticien OK ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3360,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/lancer-agent.mjs agent-executant \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"Cas de la story : {{ $('Réponse analyste').last().json.reference_cas }}. Iteration Squash : {{ $('Contexte de la story').first().json.iterationSquash }}. Fiche de suivi : {{ $('Réponse analyste').last().json.fiche_de_suivi }}.\""
+      },
+      "id": "7e3558cf-0065-4a39-af44-5e6c499bcd4f",
+      "name": "🤖 Agent exécutant : lance la campagne",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3648,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lit la reponse finale de agent-executant (un objet JSON, cf. competence-rediger-comptes-rendus).\nconst sortie = $input.first().json;\nlet reponse = null;\ntry {\n  // la derniere ligne JSON de la sortie : d'eventuels avertissements la precedent\n  const ligne = String(sortie.stdout || '').split(String.fromCharCode(10)).reverse().find(l => l.trim().startsWith('{'));\n  const enveloppe = JSON.parse(ligne);\n  const texte = String(enveloppe.result ?? '');\n  if (!enveloppe.is_error) reponse = JSON.parse(texte.slice(texte.indexOf('{'), texte.lastIndexOf('}') + 1));\n} catch (e) { /* reponse illisible : traitee ci-dessous */ }\nif (!reponse || !reponse.statut) {\n  reponse = {\n    statut: 'bloque',\n    resume: \"L'agent n'a pas renvoyé de réponse lisible.\",\n    prochaine_action: \"Ouvrir cette exécution dans n8n et lire la sortie de la boîte « Agent exécutant ».\",\n    sortie_brute: String(sortie.stdout || sortie.stderr || sortie.error || '(aucune sortie)').slice(0, 1500),\n  };\n}\nreturn [{ json: { agent: 'agent-executant', ...reponse } }];"
+      },
+      "id": "10439624-6bb0-4393-a352-b9e4ee558e15",
+      "name": "Réponse exécutant",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3920,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "26cf17a6-6ad6-4957-bbfe-864a47b5ac25",
+              "leftValue": "={{ $json.statut }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "67595d2e-04b3-429f-ae6e-ddd003dfa36f",
+      "name": "Exécutant OK ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/lancer-agent.mjs agent-gestionnaire-anomalies \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"Story Jira {{ $('Contexte de la story').first().json.cleStory }}. Iteration Squash : {{ $('Contexte de la story').first().json.iterationSquash }}. Fiche de suivi : {{ $('Réponse analyste').last().json.fiche_de_suivi }}.\""
+      },
+      "id": "327b8480-3974-411e-b496-20b70c73a740",
+      "name": "🤖 Agent gestionnaire d'anomalies : trie les échecs",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        4480,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lit la reponse finale de agent-gestionnaire-anomalies (un objet JSON, cf. competence-rediger-comptes-rendus).\nconst sortie = $input.first().json;\nlet reponse = null;\ntry {\n  // la derniere ligne JSON de la sortie : d'eventuels avertissements la precedent\n  const ligne = String(sortie.stdout || '').split(String.fromCharCode(10)).reverse().find(l => l.trim().startsWith('{'));\n  const enveloppe = JSON.parse(ligne);\n  const texte = String(enveloppe.result ?? '');\n  if (!enveloppe.is_error) reponse = JSON.parse(texte.slice(texte.indexOf('{'), texte.lastIndexOf('}') + 1));\n} catch (e) { /* reponse illisible : traitee ci-dessous */ }\nif (!reponse || !reponse.statut) {\n  reponse = {\n    statut: 'bloque',\n    resume: \"L'agent n'a pas renvoyé de réponse lisible.\",\n    prochaine_action: \"Ouvrir cette exécution dans n8n et lire la sortie de la boîte « Agent gestionnaire ».\",\n    sortie_brute: String(sortie.stdout || sortie.stderr || sortie.error || '(aucune sortie)').slice(0, 1500),\n  };\n}\nreturn [{ json: { agent: 'agent-gestionnaire-anomalies', ...reponse } }];"
+      },
+      "id": "bfa8a72f-b46b-4e38-a58c-20cc4015fd0f",
+      "name": "Réponse gestionnaire",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4768,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "db26f469-1bf5-4f1b-a5c7-9815359b38bb",
+              "leftValue": "={{ $json.statut }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e2f82c27-8219-4f59-aa41-224f40efaecb",
+      "name": "Gestionnaire OK ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5040,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/lancer-agent.mjs agent-rapporteur \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"Story Jira {{ $('Contexte de la story').first().json.cleStory }}. Iteration Squash : {{ $('Contexte de la story').first().json.iterationSquash }}. Fiche de suivi : {{ $('Réponse analyste').last().json.fiche_de_suivi }}.\""
+      },
+      "id": "ecb6122c-86fc-46ec-99b7-22886416348b",
+      "name": "🤖 Agent rapporteur : publie les comptes rendus",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        5328,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lit la reponse finale de agent-rapporteur (un objet JSON, cf. competence-rediger-comptes-rendus).\nconst sortie = $input.first().json;\nlet reponse = null;\ntry {\n  // la derniere ligne JSON de la sortie : d'eventuels avertissements la precedent\n  const ligne = String(sortie.stdout || '').split(String.fromCharCode(10)).reverse().find(l => l.trim().startsWith('{'));\n  const enveloppe = JSON.parse(ligne);\n  const texte = String(enveloppe.result ?? '');\n  if (!enveloppe.is_error) reponse = JSON.parse(texte.slice(texte.indexOf('{'), texte.lastIndexOf('}') + 1));\n} catch (e) { /* reponse illisible : traitee ci-dessous */ }\nif (!reponse || !reponse.statut) {\n  reponse = {\n    statut: 'bloque',\n    resume: \"L'agent n'a pas renvoyé de réponse lisible.\",\n    prochaine_action: \"Ouvrir cette exécution dans n8n et lire la sortie de la boîte « Agent rapporteur ».\",\n    sortie_brute: String(sortie.stdout || sortie.stderr || sortie.error || '(aucune sortie)').slice(0, 1500),\n  };\n}\nreturn [{ json: { agent: 'agent-rapporteur', ...reponse } }];"
+      },
+      "id": "0fd15a9a-f0b2-4d22-9313-239937d38ccf",
+      "name": "Réponse rapporteur",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5600,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cc6522d9-9961-4460-a755-ebe39931230c",
+              "leftValue": "={{ $json.statut }}",
+              "rightValue": "ok",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3ba4d8ff-591f-49b4-940a-a60b06a53b3e",
+      "name": "Rapporteur OK ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        5888,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Contexte de la story').first().json.jiraSite }}/rest/api/3/issue/{{ $('Contexte de la story').first().json.cleStory }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"update\":{\"labels\":[{\"remove\":\"qa-en-cours\"},{\"add\":\"qa-termine\"}]}}",
+        "options": {}
+      },
+      "id": "e755f5a6-8ff9-455c-a468-ce468269bdfe",
+      "name": "Jira : étiquette qa-termine",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6160,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cef36dbb-0549-4614-952d-0b91d67e63c6",
+              "name": "story",
+              "value": "={{ $('Contexte de la story').first().json.titreStory }} ({{ $('Contexte de la story').first().json.cleStory }})",
+              "type": "string"
+            },
+            {
+              "id": "b89f6d8d-3228-47b2-ac52-6b75d953b59f",
+              "name": "verdict",
+              "value": "={{ $('Réponse rapporteur').last().json.verdict_story }}",
+              "type": "string"
+            },
+            {
+              "id": "606b7ce9-4e51-4504-8a3e-b46966061350",
+              "name": "resume",
+              "value": "={{ $('Réponse rapporteur').last().json.resume }}",
+              "type": "string"
+            },
+            {
+              "id": "6ec5829c-ce8a-478d-a1e6-48ee956bd31a",
+              "name": "anomalies",
+              "value": "={{ ($('Réponse gestionnaire').last().json.anomalies || []).map(a => a.cle + ' ' + a.titre).join(' | ') || 'aucune' }}",
+              "type": "string"
+            },
+            {
+              "id": "0586dd41-f047-4ea2-9096-70de1d405039",
+              "name": "prochaine_action",
+              "value": "={{ $('Réponse rapporteur').last().json.prochaine_action }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "67f55f17-4b27-46a9-940a-7c48c31cbf36",
+      "name": "✅ Cycle terminé",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6448,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Rassemble ce qu'un humain doit savoir quand un agent (ou Squash) est bloque.\nconst r = $input.first().json;\nconst agent = r.agent || 'Squash (changement de statut du cas)';\nconst resume = r.resume || r.error || r.stderr || 'cause inconnue';\nconst action = r.prochaine_action || \"Ouvrir l'exécution dans n8n pour voir le détail.\";\nconst message =\n  '*🛑 Cycle QA automatisé interrompu*\\n\\n' +\n  '*Étape bloquée* : ' + agent + '\\n' +\n  '*Pourquoi* : ' + resume + '\\n' +\n  '*À faire* : ' + action + '\\n\\n' +\n  \"Une fois le problème réglé, demander à Claude de retester cette story (par exemple « teste \" + $('Contexte de la story').first().json.cleStory + \" »).\";\nreturn [{ json: { agent, resume, action, message } }];"
+      },
+      "id": "60544a42-6a05-41dc-8959-4a2f496e1edb",
+      "name": "🛑 Préparer le signalement",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3648,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Contexte de la story').first().json.jiraSite }}/rest/api/2/issue/{{ $('Contexte de la story').first().json.cleStory }}/comment",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ body: $json.message }) }}",
+        "options": {}
+      },
+      "id": "2b4b4b44-8f0b-43b9-9761-7596b8438404",
+      "name": "Jira : commentaire de blocage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3920,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Contexte de la story').first().json.jiraSite }}/rest/api/3/issue/{{ $('Contexte de la story').first().json.cleStory }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"update\":{\"labels\":[{\"remove\":\"qa-en-cours\"},{\"remove\":\"qa-a-valider\"},{\"add\":\"qa-bloque\"}]}}",
+        "options": {}
+      },
+      "id": "c2602af1-6402-458c-b770-610846eaf58e",
+      "name": "Jira : étiquette qa-bloque",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4208,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "errorMessage": "={{ $('🛑 Préparer le signalement').first().json.agent }} : {{ $('🛑 Préparer le signalement').first().json.resume }}"
+      },
+      "id": "90914de0-0b65-4619-8a83-0d01fc064750",
+      "name": "🛑 Arrêter : étape bloquée",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        4480,
+        400
+      ]
+    },
+    {
+      "id": "b1364f69-160e-40c8-9efa-9a1df87340fa",
+      "name": "📓 Journal : cycle démarré",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        428,
+        -170
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"cycle démarré : l'agent analyste va rédiger le cas de test\""
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "f7d883ae-0faf-4571-b1b9-8f16f542d4df",
+      "name": "📓 Journal : attente de validation",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1548,
+        -170
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"étiquette qa-a-valider posée : le cas {{ $('Réponse analyste').last().json.reference_cas }} attend votre validation (formulaire)\""
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "afbeb53e-6d26-4488-bbc0-de2aade26090",
+      "name": "📓 Journal : cas approuvé",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2108,
+        -170
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"cas {{ $('Réponse analyste').last().json.reference_cas }} APPROUVÉ par le valideur. Remarques : {{ String($('⏸ Attendre votre validation').last().json.Remarques || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') || 'aucune' }}\""
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "8d45792f-2d07-43ea-98f4-cfeea0029b62",
+      "name": "📓 Journal : cas refusé",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2108,
+        180
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"cas {{ $('Réponse analyste').last().json.reference_cas }} REFUSÉ par le valideur, renvoyé à l'agent analyste. Remarques : {{ String($('⏸ Attendre votre validation').last().json.Remarques || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') || 'aucune' }}\""
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "e7b4876a-632b-4039-9daf-86eb47f81297",
+      "name": "📓 Journal : statut Squash",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2668,
+        -170
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"étiquette qa-en-cours remise, statut du cas {{ $('Réponse analyste').last().json.reference_cas }} passé à « Approuvé » dans Squash\""
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "e2c14762-61b2-403c-b32c-24a588ebddd6",
+      "name": "📓 Journal : cycle terminé",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        6300,
+        -170
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"✅ cycle terminé, étiquette qa-termine posée. Verdict : {{ $('Réponse rapporteur').last().json.verdict_story }}\""
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "7bba560a-79be-4ab7-bc33-4a6ce54af650",
+      "name": "📓 Journal : cycle interrompu",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        4348,
+        300
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"🛑 cycle interrompu à l'étape {{ $('🛑 Préparer le signalement').first().json.agent }} : commentaire et étiquette qa-bloque posés dans Jira\""
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Tester avec une story précise": {
+      "main": [
+        [
+          {
+            "node": "Story de test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Story de test": {
+      "main": [
+        [
+          {
+            "node": "Contexte de la story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contexte de la story": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agent analyste : rédige le cas de test",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : cycle démarré",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Agent analyste : rédige le cas de test": {
+      "main": [
+        [
+          {
+            "node": "Réponse analyste",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réponse analyste": {
+      "main": [
+        [
+          {
+            "node": "Analyste OK ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyste OK ?": {
+      "main": [
+        [
+          {
+            "node": "Jira : étiquette qa-a-valider",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛑 Préparer le signalement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : étiquette qa-a-valider": {
+      "main": [
+        [
+          {
+            "node": "⏸ Attendre votre validation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : attente de validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏸ Attendre votre validation": {
+      "main": [
+        [
+          {
+            "node": "Cas approuvé ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cas approuvé ?": {
+      "main": [
+        [
+          {
+            "node": "Jira : étiquette qa-en-cours",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : cas approuvé",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Remarques à transmettre",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : cas refusé",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remarques à transmettre": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agent analyste : rédige le cas de test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : étiquette qa-en-cours": {
+      "main": [
+        [
+          {
+            "node": "Squash : cas « Approuvé »",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Squash : cas « Approuvé »": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agent automaticien : écrit le test",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : statut Squash",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛑 Préparer le signalement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Agent automaticien : écrit le test": {
+      "main": [
+        [
+          {
+            "node": "Réponse automaticien",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réponse automaticien": {
+      "main": [
+        [
+          {
+            "node": "Automaticien OK ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Automaticien OK ?": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agent exécutant : lance la campagne",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛑 Préparer le signalement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Agent exécutant : lance la campagne": {
+      "main": [
+        [
+          {
+            "node": "Réponse exécutant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réponse exécutant": {
+      "main": [
+        [
+          {
+            "node": "Exécutant OK ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exécutant OK ?": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agent gestionnaire d'anomalies : trie les échecs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛑 Préparer le signalement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Agent gestionnaire d'anomalies : trie les échecs": {
+      "main": [
+        [
+          {
+            "node": "Réponse gestionnaire",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réponse gestionnaire": {
+      "main": [
+        [
+          {
+            "node": "Gestionnaire OK ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gestionnaire OK ?": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agent rapporteur : publie les comptes rendus",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛑 Préparer le signalement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Agent rapporteur : publie les comptes rendus": {
+      "main": [
+        [
+          {
+            "node": "Réponse rapporteur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réponse rapporteur": {
+      "main": [
+        [
+          {
+            "node": "Rapporteur OK ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rapporteur OK ?": {
+      "main": [
+        [
+          {
+            "node": "Jira : étiquette qa-termine",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛑 Préparer le signalement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : étiquette qa-termine": {
+      "main": [
+        [
+          {
+            "node": "✅ Cycle terminé",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : cycle terminé",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🛑 Préparer le signalement": {
+      "main": [
+        [
+          {
+            "node": "Jira : commentaire de blocage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : commentaire de blocage": {
+      "main": [
+        [
+          {
+            "node": "Jira : étiquette qa-bloque",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : étiquette qa-bloque": {
+      "main": [
+        [
+          {
+            "node": "🛑 Arrêter : étape bloquée",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : cycle interrompu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Story reçue": {
+      "main": [
+        [
+          {
+            "node": "Contexte de la story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false,
+  "pinData": {}
+}

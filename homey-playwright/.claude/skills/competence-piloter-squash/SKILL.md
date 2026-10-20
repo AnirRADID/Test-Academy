@@ -1,5 +1,5 @@
 ---
-name: squash
+name: competence-piloter-squash
 description: Lire et modifier Squash TM (projet Homey-Demo) par son interface REST — creer le projet complet (exigences, cas de test, couverture, campagne, iteration), decouvrir les identifiants, declarer un cas automatise, envoyer des resultats. A utiliser des qu'il est question de Squash, d'un cas CT-xx, d'une iteration, d'un plan d'execution, ou de faire remonter des resultats Playwright (leçons B3 a B7 du fil rouge Homey).
 ---
 
@@ -12,11 +12,11 @@ sous Windows comme ailleurs, et aucun jeton ne transite par la ligne de commande
 ## Utiliser
 
 ```bash
-node .claude/skills/squash/squash.mjs verifier          # le jeton repond-il ?
-node .claude/skills/squash/squash.mjs creer-projet      # toute la Phase A, d'un coup
-node .claude/skills/squash/squash.mjs reperes           # les identifiants de CETTE instance
-node .claude/skills/squash/squash.mjs tag CT-06         # declarer CT-06 automatise
-node .claude/skills/squash/squash.mjs detag CT-06
+node .claude/skills/competence-piloter-squash/squash.mjs verifier          # le jeton repond-il ?
+node .claude/skills/competence-piloter-squash/squash.mjs creer-projet      # toute la Phase A, d'un coup
+node .claude/skills/competence-piloter-squash/squash.mjs reperes           # les identifiants de CETTE instance
+node .claude/skills/competence-piloter-squash/squash.mjs tag CT-06         # declarer CT-06 automatise
+node .claude/skills/competence-piloter-squash/squash.mjs detag CT-06
 ```
 
 Le jeton est lu dans `SQUASH_TOKEN`, sinon dans `squash/.token`. L'adresse dans
@@ -24,6 +24,47 @@ Le jeton est lu dans `SQUASH_TOKEN`, sinon dans `squash/.token`. L'adresse dans
 
 > **Ne JAMAIS afficher le jeton**, ni le lire a voix haute dans une reponse, ni le
 > passer en argument d'une commande.
+
+## Le cycle par story (commandes utilisees par les agents)
+
+```bash
+node .claude/skills/competence-piloter-squash/squash.mjs ajouter-story suivi-des-stories/donnees-squash/story-inscription-d-un-nouveau-compte.json
+node .claude/skills/competence-piloter-squash/squash.mjs modifier-cas  suivi-des-stories/donnees-squash/story-inscription-d-un-nouveau-compte.json
+node .claude/skills/competence-piloter-squash/squash.mjs lire-cas TC-HVC-6
+node .claude/skills/competence-piloter-squash/squash.mjs statut TC-HVC-6 APPROUVE      # EN_COURS | A_APPROUVER | APPROUVE
+node .claude/skills/competence-piloter-squash/squash.mjs ajouter-au-plan TC-HVC-6 <iteration_id>
+node .claude/skills/competence-piloter-squash/squash.mjs resultats <iteration_id>
+node .claude/skills/competence-piloter-squash/squash.mjs lire-bilans <iteration_id>      # les bilans deja publies
+node .claude/skills/competence-piloter-squash/squash.mjs bilan-iteration <iteration_id> <fichier.html>
+```
+
+Le fichier lu par `ajouter-story` et `modifier-cas` :
+
+```json
+{
+  "story_jira": "HVC-6",
+  "exigence": { "nom": "HVC-6 - Inscription d'un nouveau compte",
+                "description": "En tant que visiteur, je veux ...", "criticite": "MAJOR" },
+  "cas": {
+    "reference": "TC-HVC-6",
+    "nom": "Inscription d'un nouveau compte",
+    "description": "Ce que le cas verifie, en une phrase.",
+    "prerequis": "Ce qui doit etre vrai avant de commencer.",
+    "importance": "MEDIUM",
+    "pas": [ { "action": "Ce que fait le testeur", "resultat_attendu": "Ce qu'il doit voir" } ]
+  },
+  "iteration_id": 1
+}
+```
+
+- La reference de l'exigence est **la cle de la story Jira** ; celle du cas est `TC-` + cette
+  cle. C'est cette reference que le rapporteur Playwright relit dans le titre du test.
+- `ajouter-story` refuse un cas qui existe deja : passer alors par `modifier-cas`, qui
+  remplace tous les pas et remet le cas « A approuver ».
+- `criticite` : `MINOR`, `MAJOR`, `CRITICAL`. `importance` : `LOW`, `MEDIUM`, `HIGH`, `VERY_HIGH`.
+- Verifie en reel le 20/10/2026 (cycle complet HVC-7) : `status` d'un cas, `ajouter-au-plan`,
+  `resultats`, `bilan-iteration`. **Pas encore verifie** : `modifier-cas` (suppression des pas
+  par `DELETE test-steps/{ids}`) — au premier echec, lire le message, corriger ici.
 
 ## Ne jamais deviner un identifiant
 

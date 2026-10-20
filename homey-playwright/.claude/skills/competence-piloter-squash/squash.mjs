@@ -2,11 +2,20 @@
 /**
  * squash.mjs — parler a Squash TM depuis Claude Code, sous Windows comme ailleurs.
  *
- *   node .claude/skills/squash/squash.mjs verifier
- *   node .claude/skills/squash/squash.mjs reperes
- *   node .claude/skills/squash/squash.mjs creer-projet [chemin/contenu-homey.json]
- *   node .claude/skills/squash/squash.mjs tag CT-06
- *   node .claude/skills/squash/squash.mjs detag CT-06
+ *   node .claude/skills/competence-piloter-squash/squash.mjs verifier
+ *   node .claude/skills/competence-piloter-squash/squash.mjs reperes
+ *   node .claude/skills/competence-piloter-squash/squash.mjs creer-projet [chemin/contenu-homey.json]
+ *   node .claude/skills/competence-piloter-squash/squash.mjs tag CT-06
+ *   node .claude/skills/competence-piloter-squash/squash.mjs detag CT-06
+ *
+ * Commandes du cycle par story (utilisees par les agents, voir .claude/agents/) :
+ *   ajouter-story <fichier.json>          exigence miroir (si absente) + cas de test « A approuver »
+ *   modifier-cas <fichier.json>           reecrit nom, description, prerequis et pas d'un cas
+ *   lire-cas <reference>                  le cas et ses pas, en clair
+ *   statut <reference> <EN_COURS|A_APPROUVER|APPROUVE>
+ *   ajouter-au-plan <reference> <iteration_id>
+ *   resultats <iteration_id>              statut de chaque cas du plan + derniere execution
+ *   bilan-iteration <iteration_id> <fichier.html>   ajoute un bilan date en tete de la description
  *
  * Le jeton n'est JAMAIS passe en argument (il resterait visible dans la liste des
  * processus). Il est lu, dans cet ordre :
@@ -90,6 +99,26 @@ async function casParReference(projet, ref) {
   const trouve = (await tousLesCas(projet)).find(c => c.reference === ref);
   if (!trouve) throw new Error(`Aucun cas de test de reference ${ref} dans ${projet.name}.`);
   return trouve;
+}
+async function toutesLesExigences(projet) {
+  const sortie = [];
+  for (const n of await contenuDe(`projects/${projet.id}/requirements-library/content?size=200`)) {
+    if (n._type.endsWith('-folder')) await parcourir(`${n._type}s`, n.id, sortie);
+    else sortie.push(n);
+  }
+  // comme pour les cas : la reference n'est portee que par la version courante
+  return Promise.all(sortie.map(n => appel('GET', `requirements/${n.id}`)));
+}
+
+// Statuts d'un cas de test : le nom affiche dans Squash -> la valeur attendue par l'API.
+const STATUTS = { EN_COURS: 'WORK_IN_PROGRESS', A_APPROUVER: 'UNDER_REVIEW', APPROUVE: 'APPROVED' };
+
+const lireJson = (fichier) => JSON.parse(readFileSync(resolve(fichier), 'utf8'));
+const pasSquash = (pas) => (pas || []).map(s => ({
+  _type: 'action-step', action: s.action, expected_result: s.resultat_attendu }));
+
+async function planDeLIteration(iterationId) {
+  return (await appel('GET', `iterations/${iterationId}/test-plan?size=200`))?._embedded?.['test-plan'] || [];
 }
 
 /* ---------------------------------------------------------------- commandes */
@@ -198,6 +227,133 @@ const commandes = {
     // Il n'existe pas de moyen propre de revenir a un vrai NULL par l'API.
     await appel('PATCH', `test-cases/${c.id}`, { _type: 'test-case', automated_test_reference: '' });
     console.log(`${ref} (id ${c.id}) n est plus declare automatise.`);
+  },
+
+  /* ------------------------------------------------- cycle par story (agents) */
+
+  // Fichier attendu (cf. competence-piloter-squash/SKILL.md, « Le cycle par story ») :
+  // { story_jira, exigence: { nom, description, criticite }, cas: { reference, nom,
+  //   description, prerequis, importance, pas: [{ action, resultat_attendu }] }, iteration_id? }
+  async 'ajouter-story'(fichier) {
+    if (!fichier) throw new Error('Usage : ajouter-story <fichier.json>');
+    const d = lireJson(fichier);
+    const projet = await projetHomey();
+
+    if ((await tousLesCas(projet)).some(c => c.reference === d.cas.reference))
+      throw new Error(`Le cas ${d.cas.reference} existe deja. Utiliser modifier-cas.`);
+
+    // L'exigence miroir n'est creee que si la story n'a pas encore la sienne.
+    let exigence = (await toutesLesExigences(projet))
+      .find(e => e.current_version?.reference === d.story_jira);
+    if (exigence) {
+      console.log(`exigence ${d.story_jira} deja presente (id ${exigence.id}), reutilisee`);
+    } else {
+      // PIEGE : current_version AVANT name, et le parent est le PROJET.
+      exigence = await appel('POST', 'requirements', {
+        _type: 'requirement',
+        current_version: {
+          _type: 'requirement-version', reference: d.story_jira, description: d.exigence.description,
+          criticality: d.exigence.criticite || 'MAJOR', status: 'APPROVED',
+        },
+        name: d.exigence.nom,
+        parent: { _type: 'project', id: projet.id },
+      });
+      console.log(`exigence ${d.story_jira} creee (id ${exigence.id})`);
+    }
+
+    // PIEGE : la couverture ne se pose QU'A LA CREATION du cas.
+    const tc = await appel('POST', 'test-cases', {
+      _type: 'test-case',
+      verified_requirements: [{ _type: 'requirement-version', id: exigence.current_version.id }],
+      name: d.cas.nom, reference: d.cas.reference,
+      description: d.cas.description, prerequisite: d.cas.prerequis,
+      importance: d.cas.importance || 'MEDIUM',
+      status: STATUTS.A_APPROUVER,
+      parent: { _type: 'project', id: projet.id },
+      steps: pasSquash(d.cas.pas),
+    });
+    console.log(`cas ${d.cas.reference} cree (id ${tc.id}), ${d.cas.pas.length} pas, statut « A approuver »`);
+
+    if (d.iteration_id) await commandes['ajouter-au-plan'](d.cas.reference, d.iteration_id);
+  },
+
+  // Meme fichier que ajouter-story (seule la partie « cas » est lue). Les pas sont
+  // entierement remplaces : la couverture, elle, ne bouge pas.
+  async 'modifier-cas'(fichier) {
+    if (!fichier) throw new Error('Usage : modifier-cas <fichier.json>');
+    const { cas } = lireJson(fichier);
+    const c = await casParReference(await projetHomey(), cas.reference);
+    await appel('PATCH', `test-cases/${c.id}`, {
+      _type: 'test-case', name: cas.nom, description: cas.description,
+      prerequisite: cas.prerequis, status: STATUTS.A_APPROUVER,
+    });
+    const anciens = (await appel('GET', `test-cases/${c.id}/steps?size=200`))?._embedded?.steps || [];
+    if (anciens.length) await appel('DELETE', `test-steps/${anciens.map(s => s.id).join(',')}`);
+    for (const s of pasSquash(cas.pas)) await appel('POST', `test-cases/${c.id}/steps`, s);
+    console.log(`cas ${cas.reference} reecrit : ${cas.pas.length} pas, statut « A approuver »`);
+  },
+
+  async 'lire-cas'(ref) {
+    if (!ref) throw new Error('Usage : lire-cas TC-HVC-6');
+    const c = await casParReference(await projetHomey(), ref);
+    const pas = (await appel('GET', `test-cases/${c.id}/steps?size=200`))?._embedded?.steps || [];
+    console.log(`${c.reference} — ${c.name}   (id ${c.id}, statut ${c.status})`);
+    console.log(`automatise sous : ${c.automated_test_reference || '—'}`);
+    console.log(`exigence(s)     : ${(c.verified_requirements || []).map(v => v.name || `#${v.id}`).join(', ') || '—'}`);
+    console.log(`\nDescription : ${c.description || '—'}\nPrerequis   : ${c.prerequisite || '—'}\n`);
+    pas.forEach((s, i) => console.log(`Pas ${i + 1}\n  action   : ${s.action}\n  attendu  : ${s.expected_result}`));
+  },
+
+  async statut(ref, nom) {
+    if (!ref || !STATUTS[nom]) throw new Error(`Usage : statut TC-HVC-6 <${Object.keys(STATUTS).join('|')}>`);
+    const c = await casParReference(await projetHomey(), ref);
+    await appel('PATCH', `test-cases/${c.id}`, { _type: 'test-case', status: STATUTS[nom] });
+    console.log(`${ref} (id ${c.id}) passe au statut ${STATUTS[nom]}.`);
+  },
+
+  async 'ajouter-au-plan'(ref, iterationId) {
+    if (!ref || !iterationId) throw new Error('Usage : ajouter-au-plan TC-HVC-6 <iteration_id>');
+    if ((await planDeLIteration(iterationId)).some(i => i.referenced_test_case?.reference === ref))
+      return console.log(`${ref} est deja au plan de l'iteration ${iterationId}.`);
+    const c = await casParReference(await projetHomey(), ref);
+    await appel('POST', `iterations/${iterationId}/test-plan`,
+      { _type: 'iteration-test-plan-item', test_case: { _type: 'test-case', id: c.id } });
+    console.log(`${ref} ajoute au plan de l'iteration ${iterationId}.`);
+  },
+
+  async resultats(iterationId) {
+    if (!iterationId) throw new Error('Usage : resultats <iteration_id>');
+    const plan = await planDeLIteration(iterationId);
+    const compte = {};
+    for (const i of plan) compte[i.execution_status] = (compte[i.execution_status] || 0) + 1;
+    console.log(`Iteration ${iterationId} — ${plan.length} cas : ` +
+      Object.entries(compte).map(([s, n]) => `${n} ${s}`).join(', '));
+    for (const i of plan) {
+      const derniere = i.executions?.[i.executions.length - 1];
+      console.log(`  ${(i.referenced_test_case?.reference || '?').padEnd(10)} ${String(i.execution_status).padEnd(8)}` +
+        ` derniere execution ${derniere?.id ?? '—'} (${derniere?.last_executed_on ?? '—'})`);
+    }
+  },
+
+  // La description de l'iteration, en texte : c'est la que s'empilent les bilans.
+  async 'lire-bilans'(iterationId) {
+    if (!iterationId) throw new Error('Usage : lire-bilans <iteration_id>');
+    const it = await appel('GET', `iterations/${iterationId}`);
+    const texte = (it.description || '')
+      .replace(/<hr\s*\/?>/gi, '\n----------\n').replace(/<\/(p|h\d|li)>|<br\s*\/?>/gi, '\n')
+      .replace(/<li>/gi, '- ').replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim();
+    console.log(`Iteration ${it.name} (id ${iterationId}) — bilans, du plus recent au plus ancien :\n`);
+    console.log(texte || '(aucun bilan pour l instant)');
+  },
+
+  // Le bilan le plus recent en tete ; les precedents restent dessous, comme un journal.
+  async 'bilan-iteration'(iterationId, fichier) {
+    if (!iterationId || !fichier) throw new Error('Usage : bilan-iteration <iteration_id> <fichier.html>');
+    const it = await appel('GET', `iterations/${iterationId}`);
+    const bilan = readFileSync(resolve(fichier), 'utf8').trim();
+    await appel('PATCH', `iterations/${iterationId}`,
+      { _type: 'iteration', description: `${bilan}\n<hr/>\n${it.description || ''}` });
+    console.log(`Bilan ajoute en tete de la description de l'iteration ${it.name} (id ${iterationId}).`);
   },
 };
 

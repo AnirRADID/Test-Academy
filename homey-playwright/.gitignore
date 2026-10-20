@@ -1,7 +1,9 @@
 node_modules/
-playwright-report/
 test-results/
+playwright-report/
+squash/.token
+squash/.env
+squash/.homey-test-account
+suivi-des-stories/.agent-en-cours.json
 blob-report/
 .env
-squash/.env
-squash/.token
