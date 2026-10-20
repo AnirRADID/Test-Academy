@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supervision GIPHAR</title>
+<style>
+  :root {
+    --fond: #f4f5f7; --surface: #ffffff; --surface-2: #f9fafb; --bord: #e2e5ea;
+    --texte: #1d2330; --texte-2: #5b6474; --texte-3: #8a93a3;
+    --accent: #3157d5; --accent-doux: #e8edfd;
+    --travail: #1f8a4c; --travail-doux: #e3f5ea;
+    --attente: #b7791f; --attente-doux: #fbf1df;
+    --vous: #7c3aed; --vous-doux: #f1e9fe;
+    --bloque: #c53030; --bloque-doux: #fde8e8;
+    --fini: #2b6cb0; --fini-doux: #e6f0fa;
+    --ombre: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fond: #11141a; --surface: #1a1f28; --surface-2: #151a22; --bord: #2a313d;
+      --texte: #e7eaf0; --texte-2: #a7b0c0; --texte-3: #737d8f;
+      --accent: #7b9cff; --accent-doux: #1f2a4a;
+      --travail: #4ade80; --travail-doux: #14301f;
+      --attente: #f6c05c; --attente-doux: #3a2d12;
+      --vous: #b794f6; --vous-doux: #2c1f4a;
+      --bloque: #fc8181; --bloque-doux: #3d1a1a;
+      --fini: #7fb3ec; --fini-doux: #16293f;
+      --ombre: 0 1px 2px rgba(0, 0, 0, .4);
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte);
+         font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+           padding: 14px 24px; background: var(--surface); border-bottom: 1px solid var(--bord);
+           position: sticky; top: 0; z-index: 5; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 650; }
+  header .sous { color: var(--texte-2); font-size: 13px; }
+  .services { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .pastille { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+              background: var(--surface-2); border: 1px solid var(--bord); font-size: 12px; color: var(--texte-2); }
+  .pastille i { width: 8px; height: 8px; border-radius: 50%; background: var(--texte-3); }
+  .pastille.ok i { background: var(--travail); } .pastille.ko i { background: var(--bloque); }
+  main { padding: 20px 24px 40px; display: grid; gap: 24px; }
+  h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--texte-2); }
+
+  /* --- l'equipe --- */
+  .equipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .agent { background: var(--surface); border: 1px solid var(--bord); border-radius: 10px; padding: 12px 14px;
+           box-shadow: var(--ombre); border-left: 4px solid var(--bord); min-height: 118px; }
+  .agent.travail { border-left-color: var(--travail); }
+  .agent.attente { border-left-color: var(--attente); }
+  .agent .tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .agent .nom { font-weight: 650; }
+  .agent .metier { color: var(--texte-3); font-size: 12px; margin-bottom: 8px; }
+  .badge { font-size: 11px; font-weight: 650; padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+           background: var(--surface-2); color: var(--texte-3); border: 1px solid var(--bord); }
+  .badge.travail { background: var(--travail-doux); color: var(--travail); border-color: transparent; }
+  .badge.attente { background: var(--attente-doux); color: var(--attente); border-color: transparent; }
+  .badge.vous { background: var(--vous-doux); color: var(--vous); border-color: transparent; }
+  .badge.bloque { background: var(--bloque-doux); color: var(--bloque); border-color: transparent; }
+  .badge.fini { background: var(--fini-doux); color: var(--fini); border-color: transparent; }
+  .agent .story { font-weight: 600; font-size: 13px; }
+  .agent .action { color: var(--texte-2); font-size: 13px; margin-top: 2px; }
+  .agent .depuis { color: var(--texte-3); font-size: 12px; margin-top: 4px; }
+  .travail .pouls { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--travail);
+                    margin-right: 6px; animation: pouls 1.4s ease-in-out infinite; }
+  @keyframes pouls { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.7); } }
+
+  /* --- le kanban --- */
+  .kanban { display: grid; grid-template-columns: repeat(8, minmax(150px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+  .colonne { background: var(--surface-2); border: 1px solid var(--bord); border-radius: 10px; padding: 8px; min-height: 160px; }
+  .colonne .titre { display: flex; justify-content: space-between; font-weight: 650; font-size: 13px; padding: 2px 4px 8px; }
+  .colonne .titre span { color: var(--texte-3); font-weight: 500; }
+  .colonne.active { border-color: var(--travail); }
+  .colonne.vous { border-color: var(--vous); }
+  .carte { background: var(--surface); border: 1px solid var(--bord); border-radius: 8px; padding: 8px 10px;
+           margin-bottom: 8px; box-shadow: var(--ombre); cursor: pointer; transition: box-shadow .2s; }
+  .carte:hover { box-shadow: 0 0 0 2px var(--accent-doux), var(--ombre); }
+  .carte .cle { font-size: 12px; font-weight: 650; color: var(--accent); }
+  .carte .titre-story { font-size: 13px; font-weight: 600; margin: 2px 0 6px; }
+  .carte .bas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .carte.bouge { animation: arrivee 1.6s ease-out; }
+  @keyframes arrivee { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: var(--ombre); } }
+  .valider { display: inline-block; margin-top: 8px; padding: 5px 10px; border-radius: 6px; background: var(--vous);
+             color: #fff; text-decoration: none; font-size: 12px; font-weight: 650; }
+  .vide { color: var(--texte-3); font-size: 12px; text-align: center; padding: 14px 4px; }
+
+  /* --- le fil --- */
+  .fil-tete { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .fil-tete h2 { margin: 0; }
+  select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--bord);
+           background: var(--surface); color: var(--texte); }
+  .fil { background: var(--surface); border: 1px solid var(--bord); border-radius: 10px; box-shadow: var(--ombre);
+         max-height: 460px; overflow-y: auto; }
+  .ligne { display: grid; grid-template-columns: 92px 230px 170px 1fr; gap: 10px; padding: 7px 14px;
+           border-bottom: 1px solid var(--bord); font-size: 13px; align-items: baseline; }
+  .ligne:last-child { border-bottom: 0; }
+  .ligne .quand { color: var(--texte-3); font-variant-numeric: tabular-nums; }
+  .ligne .qui { font-weight: 600; }
+  .ligne .qui.n8n { color: var(--texte-2); }
+  .ligne .sto { color: var(--texte-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ligne.alerte .quoi { color: var(--bloque); }
+  .ligne.nouveau { animation: arrivee 2s ease-out; }
+
+  /* --- la fiche --- */
+  dialog { border: 1px solid var(--bord); border-radius: 12px; padding: 0; width: min(860px, 94vw);
+           max-height: 86vh; background: var(--surface); color: var(--texte); }
+  dialog::backdrop { background: rgba(10, 14, 22, .45); }
+  .fiche-tete { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px;
+                border-bottom: 1px solid var(--bord); position: sticky; top: 0; background: var(--surface); }
+  .fiche-tete button { font: inherit; border: 1px solid var(--bord); background: var(--surface-2); color: var(--texte);
+                       border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  .fiche { padding: 6px 22px 22px; overflow-y: auto; }
+  .fiche table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+  .fiche td, .fiche th { border: 1px solid var(--bord); padding: 6px 8px; text-align: left; vertical-align: top; }
+  .fiche h1 { font-size: 20px; } .fiche h2 { font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--texte); margin-top: 20px; }
+  .fiche a { color: var(--accent); }
+  .fiche code { background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+
+  @media (max-width: 720px) {
+    header, main { padding-left: 16px; padding-right: 16px; }
+    .ligne { grid-template-columns: 70px 1fr; }
+    .ligne .sto, .ligne .qui { grid-column: 2; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Supervision GIPHAR</h1>
+    <div class="sous">L'équipe d'agents QA, en direct · mis à jour <span id="maj">…</span></div>
+  </div>
+  <div class="services" id="services"></div>
+</header>
+
+<main>
+  <section>
+    <h2>L'équipe</h2>
+    <div class="equipe" id="equipe"></div>
+  </section>
+
+  <section>
+    <h2>Les stories, étape par étape</h2>
+    <div class="kanban" id="kanban"></div>
+  </section>
+
+  <section>
+    <div class="fil-tete">
+      <h2>Fil d'activité</h2>
+      <select id="filtre"><option value="">Toutes les stories</option></select>
+    </div>
+    <div class="fil" id="fil"></div>
+  </section>
+</main>
+
+<dialog id="dialogue">
+  <div class="fiche-tete"><strong id="fiche-titre">Fiche de suivi</strong><button id="fermer">Fermer</button></div>
+  <div class="fiche" id="fiche"></div>
+</dialog>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sansAgent = (n) => String(n || '').replace(/^agent-/, '');
+let precedent = { colonnes: {}, dernierEvenement: -1 };
+
+function depuis(iso) {
+  if (!iso) return '';
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  return min < 1 ? 'depuis moins d’une minute' : min < 60 ? `depuis ${min} min` : `depuis ${Math.floor(min / 60)} h ${min % 60} min`;
+}
+
+function services(s) {
+  const p = (nom, ok) => `<span class="pastille ${ok === null ? '' : ok ? 'ok' : 'ko'}"><i></i>${nom} ${ok === null ? '…' : ok ? 'allumé' : 'éteint'}</span>`;
+  $('services').innerHTML = p('n8n', s.n8n) + p('Squash', s.squash);
+}
+
+function equipe(agents) {
+  $('equipe').innerHTML = agents.map((a) => {
+    let corps, badge;
+    if (a.etat === 'travail') {
+      badge = '<span class="badge travail">au travail</span>';
+      corps = `<div class="story"><span class="pouls"></span>${esc(a.story)}</div>
+               <div class="action">${esc(a.action)}</div><div class="depuis">${depuis(a.depuis)}</div>`;
+    } else if (a.etat === 'attente') {
+      badge = '<span class="badge attente">attend son tour</span>';
+      corps = `<div class="story">${a.stories.map(esc).join('<br>')}</div><div class="action">un autre agent travaille</div>`;
+    } else {
+      badge = '<span class="badge">libre</span>';
+      corps = a.dernier
+        ? `<div class="action">Dernier travail : ${esc(a.dernier.story)}</div><div class="depuis">${esc(a.dernier.quoi.slice(0, 90))} · ${esc(a.dernier.quand)}</div>`
+        : '<div class="action">Pas encore sollicité</div>';
+    }
+    return `<div class="agent ${a.etat}"><div class="tete"><span class="nom">${esc(a.titre)}</span>${badge}</div>
+            <div class="metier">${esc(a.metier)}</div>${corps}</div>`;
+  }).join('');
+}
+
+function kanban(colonnes, stories, agents) {
+  // Animation : on note ou etait chaque carte avant de redessiner.
+  const avant = {};
+  document.querySelectorAll('.carte').forEach((c) => (avant[c.dataset.cle] = c.getBoundingClientRect()));
+  const actifs = new Set(agents.filter((a) => a.etat === 'travail').map((a) => a.nom));
+
+  $('kanban').innerHTML = colonnes.map((col) => {
+    const ici = stories.filter((s) => s.colonne === col.id);
+    const classe = col.agent && actifs.has(col.agent) ? 'active' : col.id === 'a-valider' && ici.length ? 'vous' : '';
+    const cartes = ici.map((s) => `
+      <div class="carte" data-cle="${esc(s.cle)}" title="${esc(s.prochaineAction)}">
+        <div class="cle">${esc(s.cle)}</div>
+        <div class="titre-story">${esc(s.titre)}</div>
+        <div class="bas"><span class="badge ${esc(s.sousEtat.code)}">${esc(s.sousEtat.texte)}</span></div>
+        ${s.lienValidation ? `<a class="valider" href="${esc(s.lienValidation)}" target="_blank" rel="noopener">Valider le cas →</a>` : ''}
+      </div>`).join('');
+    return `<div class="colonne ${classe}"><div class="titre">${esc(col.titre)}<span>${ici.length}</span></div>
+            ${cartes || '<div class="vide">—</div>'}</div>`;
+  }).join('');
+
+  // ... puis on fait glisser chaque carte de son ancienne place vers la nouvelle.
+  document.querySelectorAll('.carte').forEach((c) => {
+    const cle = c.dataset.cle, a = avant[cle], b = c.getBoundingClientRect();
+    if (precedent.colonnes[cle] && precedent.colonnes[cle] !== stories.find((s) => s.cle === cle)?.colonne) {
+      c.classList.add('bouge');
+      if (a) c.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)` }, { transform: 'none' }],
+                       { duration: 700, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    }
+    c.addEventListener('click', (e) => { if (!e.target.closest('a')) ouvrirFiche(cle); });
+  });
+  precedent.colonnes = Object.fromEntries(stories.map((s) => [s.cle, s.colonne]));
+}
+
+function fil(evenements, stories) {
+  const choix = $('filtre').value;
+  const options = ['<option value="">Toutes les stories</option>']
+    .concat(stories.map((s) => `<option value="${esc(s.cle)}" ${s.cle === choix ? 'selected' : ''}>${esc(s.cle)} · ${esc(s.titre)}</option>`));
+  if ($('filtre').options.length !== options.length) $('filtre').innerHTML = options.join('');
+  const lignes = evenements.filter((e) => !choix || e.cle === choix);
+  $('fil').innerHTML = lignes.length ? lignes.map((e) => `
+    <div class="ligne ${/⚠|🛑/.test(e.quoi) ? 'alerte' : ''} ${e.n > precedent.dernierEvenement && precedent.dernierEvenement >= 0 ? 'nouveau' : ''}">
+      <span class="quand">${esc(e.date.slice(0, 5))} ${esc(e.heure)}</span>
+      <span class="sto" title="${esc(e.story || '')}">${e.cle ? `<b>${esc(e.cle)}</b> · ` : ''}${esc((e.story || '—').replace(/\s*\([^)]*\)\s*$/, ''))}</span>
+      <span class="qui ${e.qui === 'n8n' ? 'n8n' : ''}">${esc(e.qui === 'n8n' ? 'n8n' : sansAgent(e.qui))}</span>
+      <span class="quoi">${esc(e.quoi)}</span>
+    </div>`).join('') : '<div class="vide">Rien pour l’instant. Demandez à Claude : « teste HVC-8 ».</div>';
+  precedent.dernierEvenement = evenements[0]?.n ?? precedent.dernierEvenement;
+}
+
+/* --- la fiche de suivi, mise en forme simple --- */
+function markdown(md) {
+  const enLigne = (t) => esc(t)
+    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/(^|\s)_([^_]+)_(?=\s|$|[.,;])/g, '$1<em>$2</em>');
+  const sortie = []; let liste = null, table = null, para = null;
+  const finPara = () => { if (para) { sortie.push(`<p>${enLigne(para)}</p>`); para = null; } };
+  const fermer = () => { finPara(); if (liste) { sortie.push(`</${liste}>`); liste = null; } if (table) { sortie.push('</table>'); table = null; } };
+  for (const ligne of md.split(/\r?\n/)) {
+    let m;
+    if ((m = ligne.match(/^(#{1,3}) (.*)$/))) { fermer(); sortie.push(`<h${m[1].length}>${enLigne(m[2])}</h${m[1].length}>`); }
+    else if (/^\|/.test(ligne)) {
+      if (/^\|[\s|:-]+\|$/.test(ligne)) continue;
+      if (!table) { fermer(); sortie.push('<table>'); table = true; }
+      sortie.push('<tr>' + ligne.replace(/^\||\|$/g, '').split('|').map((c) => `<td>${enLigne(c.trim())}</td>`).join('') + '</tr>');
+    }
+    else if ((m = ligne.match(/^\s*(?:- |\d+\. )(.*)$/))) {
+      const type = /^\s*\d+\./.test(ligne) ? 'ol' : 'ul';
+      finPara(); if (liste !== type) { fermer(); sortie.push(`<${type}>`); liste = type; }
+      sortie.push(`<li>${enLigne(m[1])}</li>`);
+    }
+    else if (!ligne.trim()) fermer();
+    else if (liste && /^\s+\S/.test(ligne)) sortie[sortie.length - 1] = sortie[sortie.length - 1].replace(/<\/li>$/, `<br>${enLigne(ligne.trim())}</li>`);
+    else { if (table || liste) fermer(); para = para ? `${para} ${ligne.trim()}` : ligne.trim(); }
+  }
+  fermer();
+  return sortie.join('\n');
+}
+
+async function ouvrirFiche(cle) {
+  const r = await fetch(`/fiche?cle=${encodeURIComponent(cle)}`);
+  $('fiche-titre').textContent = `Fiche de suivi · ${cle}`;
+  $('fiche').innerHTML = r.ok ? markdown(await r.text()) : `<p>${esc(await r.text())}</p>`;
+  $('dialogue').showModal();
+}
+$('fermer').onclick = () => $('dialogue').close();
+$('filtre').onchange = () => rafraichir();
+
+async function rafraichir() {
+  try {
+    const e = await (await fetch('/etat', { cache: 'no-store' })).json();
+    services(e.services);
+    equipe(e.agents);
+    kanban(e.colonnes, e.stories, e.agents);
+    fil(e.evenements, e.stories);
+    $('maj').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  } catch {
+    $('maj').textContent = 'connexion perdue (la supervision est-elle démarrée ?)';
+  }
+}
+rafraichir();
+setInterval(rafraichir, 3000);
+</script>
+</body>
+</html>
