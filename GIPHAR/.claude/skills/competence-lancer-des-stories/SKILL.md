@@ -29,17 +29,33 @@ toujours passer par n8n, sinon rien n'apparaît dans n8n ni dans le journal, et 
      Sinon : demander de double-cliquer sur `n8n/demarrer-n8n.cmd`.
    - Squash : `node .claude/skills/competence-piloter-squash/squash.mjs verifier`. En échec :
      demander de démarrer Docker Desktop et d'attendre 2 minutes.
-4. **Envoyer la demande à n8n** (toutes les stories en une fois) :
+4. **Envoyer la demande à la Tour de contrôle** (toutes les stories en une fois), qui la
+   transmet à n8n et l'enregistre comme un lancement (sinon le Kanban de la Tour ne la
+   montre pas) :
    ```bash
-   curl -s -m 20 -X POST http://127.0.0.1:5678/webhook/qa-homey-lancer-des-stories \
-        -H "Content-Type: application/json" -d '{"stories":["HVC-8","HVC-9"]}'
+   curl -s -m 30 -X POST http://127.0.0.1:5680/lancer -H "Content-Type: application/json" \
+        -d '{"portee":"choix","cles":["HVC-8","HVC-9"]}'
    ```
-   Réponse attendue : `{"message":"Workflow was started"}`.
-   - `404` / « not registered » : le flux « 1. Lancer des stories » n'est pas publié, ou n8n
-     vient de redémarrer et n'a pas fini de s'initialiser → attendre 30 s et réessayer une
-     fois ; sinon demander de cliquer **Publish** sur ce flux.
+   `portee` : `"choix"` (clés données), `"sprint"` (sprint actif) ou `"backlog"`.
+   Réponse attendue : `{"n":3,"ajoute":false,"cles":[…]}` (`ajoute: true` : ajoutées au
+   lancement en cours). Une réponse `{"erreur": …}` se lit telle quelle à l'utilisateur.
+   - **Tour éteinte** (connexion refusée sur le port 5680) : envoyer directement à n8n,
+     `curl -s -m 20 -X POST http://127.0.0.1:5678/webhook/qa-homey-lancer-des-stories -H "Content-Type: application/json" -d '{"stories":["HVC-8","HVC-9"]}'`
+     → `{"message":"Workflow was started"}`.
+   - « n'est pas publié » / `404` : le flux n8n concerné n'est pas publié, ou n8n vient de
+     redémarrer → attendre 30 s et réessayer une fois ; sinon demander de cliquer
+     **Publish** sur ce flux.
 5. **Confirmer à l'utilisateur** : stories envoyées, et ce qui va se passer (l'analyste rédige
-   chaque cas ; les agents travaillent **un par un**, les autres attendent leur tour).
+   chaque cas ; les agents travaillent **un par un**, les autres attendent leur tour). Rappeler
+   que la Tour de contrôle (http://localhost:5680) permet de suivre, mettre en pause,
+   reprendre ou arrêter le lancement.
+
+## Pause, reprise, arrêt
+
+À la demande de l'utilisateur (« mets en pause », « reprends », « arrête tout ») :
+`curl -s -X POST http://127.0.0.1:5680/pause` (ou `/reprendre`, `/arreter`), avec
+`-H "Content-Type: application/json" -d '{}'`. La pause laisse l'agent au travail finir son
+étape ; l'arrêt annule ce qui reste à faire dans le lancement en cours.
 
 ## Suivre
 
@@ -59,6 +75,7 @@ toujours passer par n8n, sinon rien n'apparaît dans n8n ni dans le journal, et 
 
 ## Relancer une story
 
-Même chose qu'un premier lancement : l'envoyer à nouveau à n8n. n8n retire les anciennes
-étiquettes d'état et les agents reprennent ce qui existe déjà (cas Squash, test, fiche) sans
-doublon.
+Même chose qu'un premier lancement (étape 4), ou bouton **↻ Relancer** sur la carte dans la
+Tour. n8n retire les anciennes étiquettes d'état et les agents reprennent ce qui existe déjà
+(cas Squash, test, fiche) sans doublon. Si le cas est déjà approuvé et que la story n'a pas
+changé dans Jira, la validation humaine n'est **pas** redemandée.

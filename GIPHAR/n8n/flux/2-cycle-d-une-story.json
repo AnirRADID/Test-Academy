@@ -363,7 +363,7 @@
     },
     {
       "parameters": {
-        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/lancer-agent.mjs agent-automaticien \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"Story Jira {{ $('Contexte de la story').first().json.cleStory }}. Cas de test valide par un humain : {{ $('Réponse analyste').last().json.reference_cas }}. Fiche de suivi : {{ $('Réponse analyste').last().json.fiche_de_suivi }}. Valide le {{ $now.toFormat('dd/MM/yyyy HH:mm') }}. Remarques du valideur : {{ String($('⏸ Attendre votre validation').last().json.Remarques || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') || 'aucune' }}.\""
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/lancer-agent.mjs agent-automaticien \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"Story Jira {{ $('Contexte de la story').first().json.cleStory }}. Cas de test valide par un humain : {{ $('Réponse analyste').last().json.reference_cas }}. Fiche de suivi : {{ $('Réponse analyste').last().json.fiche_de_suivi }}. Valide le {{ $now.toFormat('dd/MM/yyyy HH:mm') }}. {{ $('⏸ Attendre votre validation').isExecuted ? 'Remarques du valideur : ' + (String($('⏸ Attendre votre validation').last().json.Remarques || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') || 'aucune') : 'Cas deja approuve lors d un passage precedent, story inchangee : pas de nouvelle validation.' }}.\""
       },
       "id": "b550dd0f-0b84-4c6c-8361-828d453136c5",
       "name": "🤖 Agent automaticien : écrit le test",
@@ -1535,6 +1535,121 @@
           "waitForSubWorkflow": true
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cf11a3e7-e0b1-4cd3-9c14-1f584bdf4fc0",
+              "leftValue": "={{ $('Réponse analyste').last().json.deja_approuve === true ? 'oui' : 'non' }}",
+              "rightValue": "oui",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c7a3deff-5aa5-4d1a-a2dc-d7ce155a8cda",
+      "name": "Validation déjà acquise ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1340,
+        112
+      ]
+    },
+    {
+      "id": "450a0577-e179-4481-8c61-bf34c7a4f998",
+      "name": "📓 Journal : validation déjà acquise",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2168,
+        -330
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"cas {{ $('Réponse analyste').last().json.reference_cas }} déjà approuvé et story inchangée : validation non redemandée\""
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "be176641-cf46-41ad-a48f-57656f0be680",
+              "leftValue": "={{ $json.statut }}",
+              "rightValue": "arrete",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ed8e8bd0-9c3d-4442-b0f2-14e54923bf38",
+      "name": "Cycle arrêté ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3428,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Contexte de la story').first().json.jiraSite }}/rest/api/3/issue/{{ $('Contexte de la story').first().json.cleStory }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"update\":{\"labels\":[{\"remove\":\"qa-en-cours\"},{\"remove\":\"qa-a-valider\"}]}}",
+        "options": {}
+      },
+      "id": "ebbc04bb-fcfe-490e-94ff-c089f56bb8d5",
+      "name": "Jira : fin du lancement",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3648,
+        600
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c177b23d-9059-4b9b-a59a-6eb2a05e8bbd",
+      "name": "📓 Journal : cycle arrêté",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3868,
+        600
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"⏹ cycle arrêté depuis la Tour de contrôle : étiquettes qa-en-cours et qa-a-valider retirées\""
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1607,14 +1722,14 @@
       "main": [
         [
           {
-            "node": "Jira : étiquette qa-a-valider",
+            "node": "Validation déjà acquise ?",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "🛑 Préparer le signalement",
+            "node": "Cycle arrêté ?",
             "type": "main",
             "index": 0
           }
@@ -1729,7 +1844,7 @@
         ],
         [
           {
-            "node": "🛑 Préparer le signalement",
+            "node": "Cycle arrêté ?",
             "type": "main",
             "index": 0
           }
@@ -1774,7 +1889,7 @@
         ],
         [
           {
-            "node": "🛑 Préparer le signalement",
+            "node": "Cycle arrêté ?",
             "type": "main",
             "index": 0
           }
@@ -1819,7 +1934,7 @@
         ],
         [
           {
-            "node": "🛑 Préparer le signalement",
+            "node": "Cycle arrêté ?",
             "type": "main",
             "index": 0
           }
@@ -1864,7 +1979,7 @@
         ],
         [
           {
-            "node": "🛑 Préparer le signalement",
+            "node": "Cycle arrêté ?",
             "type": "main",
             "index": 0
           }
@@ -1904,7 +2019,7 @@
         ],
         [
           {
-            "node": "🛑 Préparer le signalement",
+            "node": "Cycle arrêté ?",
             "type": "main",
             "index": 0
           }
@@ -1975,6 +2090,58 @@
         [
           {
             "node": "Contexte de la story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation déjà acquise ?": {
+      "main": [
+        [
+          {
+            "node": "Jira : étiquette qa-en-cours",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📓 Journal : validation déjà acquise",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Jira : étiquette qa-a-valider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cycle arrêté ?": {
+      "main": [
+        [
+          {
+            "node": "Jira : fin du lancement",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🛑 Préparer le signalement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : fin du lancement": {
+      "main": [
+        [
+          {
+            "node": "📓 Journal : cycle arrêté",
             "type": "main",
             "index": 0
           }

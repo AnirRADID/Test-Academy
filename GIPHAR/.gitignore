@@ -8,3 +8,6 @@ suivi-des-stories/.agent-en-cours.json
 blob-report/
 .env
 supervision/.analyse-claude.json
+suivi-des-stories/.pause.json
+suivi-des-stories/.arret.json
+suivi-des-stories/lancements.json

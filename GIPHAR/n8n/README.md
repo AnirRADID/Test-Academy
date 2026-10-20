@@ -9,6 +9,7 @@ outil gratuit qui affiche le travail sous forme de boîtes reliées entre elles.
 | `flux/1-lancer-des-stories.json` | Le flux « lancement » : reçoit de Claude la liste des stories à tester |
 | `flux/2-cycle-d-une-story.json` | Le flux « cycle » : fait travailler les 5 agents sur une story |
 | `flux/3-deplacer-le-ticket-dans-jira.json` | Fait passer le ticket d'une colonne à l'autre du tableau Jira, à chaque étape |
+| `flux/4-lister-les-stories.json` | Lit dans Jira les stories du sprint actif ou du backlog, pour le panneau « Lancer des tests » de la Tour |
 | `../supervision/` | La Tour de contrôle (http://localhost:5680), démarrée avec n8n |
 | `outils/lancer-agent.mjs` | Lance un agent pour n8n et raconte au journal chacune de ses actions |
 | `outils/ecrire-au-journal.mjs` | Ajoute une ligne au journal (utilisé par les boîtes 📓 de n8n) |
@@ -88,7 +89,7 @@ Répondre **oui** à la question « Do you trust the files in this folder? », p
 `/exit`. Sans cette étape, les agents lancés par n8n se voient refuser leurs actions et
 finissent « bloqués ».
 
-### 3. Importer les deux flux
+### 3. Importer les quatre flux
 
 Toujours dans le terminal, depuis le dossier `GIPHAR` :
 
@@ -96,8 +97,9 @@ Toujours dans le terminal, depuis le dossier `GIPHAR` :
 n8n import:workflow --separate --input=n8n/flux
 ```
 
-Les deux flux arrivent avec des identifiants fixes : le flux « lancement » sait déjà où trouver
-le flux « cycle ».
+Les flux arrivent avec des identifiants fixes : le flux « lancement » sait déjà où trouver
+le flux « cycle ». La même commande sert à **mettre à jour** les flux quand ils ont changé
+dans le projet : elle remplace l'ancienne version (republier ensuite, étape 7).
 
 ### 4. Démarrer n8n
 
@@ -135,10 +137,10 @@ Dans le flux **1. Lancer des stories**, ouvrir la boîte **Réglages** :
 
 Faire de même dans la boîte **Story de test** du flux **2. Cycle d'une story**.
 
-### 7. Publier les deux flux
+### 7. Publier les quatre flux
 
 Ouvrir chaque flux et cliquer sur le bouton **Publish** (*Publier*), en haut à droite.
-**Commencer par le flux 3**, puis le 2, puis le 1. Un flux non publié ne peut pas recevoir de
+**Commencer par le flux 3**, puis le 2, le 4, et enfin le 1. Un flux non publié ne peut pas recevoir de
 demande : n8n répondrait « Workflow is not active ». Après toute modification d'un flux,
 cliquer de nouveau sur **Publish**, sinon n8n continue d'utiliser l'ancienne version.
 
@@ -199,14 +201,34 @@ clignotent : il travaille. Couleur pâle : il attend. Gris avec un « ! » : il 
 En haut à droite, deux pastilles disent si n8n et Squash sont allumés. L'itération Squash
 suivie est celle de la boîte **Réglages** du flux 1 (ou la variable `SQUASH_ITERATION_ID`).
 
-### Lancer le test d'une ou plusieurs stories
+### Lancer, mettre en pause, arrêter
 
-Le dire à Claude, dans la conversation de VS Code :
+Rien ne démarre tout seul : c'est vous qui lancez, depuis la Tour de contrôle.
+
+- **▶ Lancer des tests** (barre du haut) : un panneau liste les stories lues dans Jira. Choisir
+  **le sprint actif**, **tout le backlog** ou **des stories choisies**, décocher au besoin,
+  puis **Démarrer**. Le panneau annonce avant le clic le nombre de validations à prévoir et le
+  coût approximatif. Pendant un lancement, le même bouton devient **＋ Ajouter des stories**.
+- Le Kanban ne montre que **le lancement en cours**. Les précédents sont listés dessous
+  (« Lancements précédents »).
+- **⏸ Pause** : aucun robot ne démarre de nouvelle étape (ils dorment, « zZ »). Un robot déjà
+  au travail **finit son étape** : le couper au milieu laisserait Jira ou Squash à moitié
+  remplis. **▶ Reprendre** relance la suite.
+- **⏹ Arrêter** (avec confirmation) : les stories non terminées du lancement ne sont plus
+  traitées. Un cas qui attendait votre validation est refusé « pour arrêt », ce qui termine
+  proprement son cycle. Dans Jira, les étiquettes `qa-en-cours` / `qa-a-valider` sont retirées.
+- **↻ Relancer** : sur chaque carte terminée, bloquée ou arrêtée.
+- **Validation déjà acquise** : si le cas d'une story relancée est déjà approuvé et que la
+  story n'a pas changé dans Jira, l'analyste ne vous redemande pas de validation.
+
+### Lancer depuis la conversation
+
+On peut aussi le dire à Claude, dans la conversation de VS Code :
 
 > « Teste HVC-8 et HVC-9 » · « Teste les stories du sprint 2 » · « Relance HVC-7 »
 
 Claude vérifie que les stories existent et que n8n et Squash sont allumés, puis envoie la
-liste à n8n (compétence `competence-lancer-des-stories`). Une liste déduite d'un sprint vous
+liste à la Tour de contrôle, qui la transmet à n8n (compétence `competence-lancer-des-stories`). Une liste déduite d'un sprint vous
 est d'abord montrée pour confirmation. Ensuite, demandez simplement « où en est HVC-8 ? » :
 Claude lit le journal et la fiche de suivi, et vous donne le lien de validation quand c'est
 votre tour.

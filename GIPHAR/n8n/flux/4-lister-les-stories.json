@@ -1,0 +1,213 @@
+{
+  "id": "QaHomeyListeStor",
+  "name": "QA Homey - 4. Lister les stories",
+  "nodes": [
+    {
+      "id": "77083278-0af4-42bb-b3e6-93a6ea5d2bd9",
+      "name": "Note liste",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        -240
+      ],
+      "parameters": {
+        "color": 7,
+        "width": 1300,
+        "height": 200,
+        "content": "## QA Homey — 4. Lister les stories\nAppelé par la Tour de contrôle (http://localhost:5680) pour afficher les stories à tester : celles du **sprint actif** (`?portee=sprint`) ou de **tout le backlog** (`?portee=backlog`). Il ne fait que lire Jira, avec l'identifiant Jira de n8n.\n\nÀ publier une fois (bouton **Publish**), comme les autres flux. Vérifier que la boîte « Jira : chercher les stories » utilise bien l'identifiant **Jira SW Cloud API**."
+      }
+    },
+    {
+      "id": "e31b39da-2270-45e8-93d6-bb2c86a872db",
+      "name": "Liste demandée par la Tour",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        100
+      ],
+      "webhookId": "ba470799-8619-4f12-abdd-a9dc77655724",
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "qa-homey-lister-les-stories",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "3e17a799-6237-4c4f-858e-f0d4434f65b1",
+      "name": "Réglages",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        100
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "97085db4-959f-4e28-b5fe-c4b4f61eed21",
+              "name": "jiraSite",
+              "value": "https://testacademy.atlassian.net",
+              "type": "string"
+            },
+            {
+              "id": "29837466-eca6-41d1-8cc4-126adec330f8",
+              "name": "projetJira",
+              "value": "HVC",
+              "type": "string"
+            },
+            {
+              "id": "6dafb9ed-ea9e-472f-ac26-6f4d58b9f1a1",
+              "name": "portee",
+              "value": "={{ $('Liste demandée par la Tour').first().json.query.portee === 'sprint' ? 'sprint' : 'backlog' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "4f63f504-bdbd-47f4-9173-2d71ad07899b",
+      "name": "Jira : chercher les stories",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        100
+      ],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Réglages').first().json.jiraSite }}/rest/api/3/search/jql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "jql",
+              "value": "=project = {{ $json.projetJira }} AND issuetype = Story{{ $json.portee === 'sprint' ? ' AND sprint in openSprints()' : '' }} ORDER BY key ASC"
+            },
+            {
+              "name": "fields",
+              "value": "summary,status,labels"
+            },
+            {
+              "name": "maxResults",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ae91d3b2-2e63-46b1-bf2a-a43d78c1d4d1",
+      "name": "Mettre en forme",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Une ligne par story : cle, titre, statut Jira, etiquettes qa-*.\nconst issues = $input.first().json.issues || [];\nconst stories = issues.map(i => ({\n  cle: i.key,\n  titre: i.fields?.summary || '',\n  statut: i.fields?.status?.name || '',\n  etiquettes: (i.fields?.labels || []).filter(l => l.startsWith('qa-')),\n})).sort((a, b) => Number(a.cle.split('-').pop()) - Number(b.cle.split('-').pop()));\nreturn [{ json: { portee: $('Réglages').first().json.portee, stories } }];"
+      }
+    },
+    {
+      "id": "e28badea-25d4-4de0-a479-66b1a709c084",
+      "name": "Répondre à la Tour",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "46c8127e-b03a-4242-916d-2b55da35b0bd",
+      "name": "Répondre : Jira en erreur",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        220
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ erreur: 'Jira a refusé la recherche : ' + ($json.error?.message || $json.message || 'cause inconnue') }) }}",
+        "options": {
+          "responseCode": 502
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Liste demandée par la Tour": {
+      "main": [
+        [
+          {
+            "node": "Réglages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Réglages": {
+      "main": [
+        [
+          {
+            "node": "Jira : chercher les stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : chercher les stories": {
+      "main": [
+        [
+          {
+            "node": "Mettre en forme",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Répondre : Jira en erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mettre en forme": {
+      "main": [
+        [
+          {
+            "node": "Répondre à la Tour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false,
+  "pinData": {}
+}

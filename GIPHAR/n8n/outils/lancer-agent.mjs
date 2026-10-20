@@ -116,11 +116,40 @@ const VERROU = join(RACINE, 'suivi-des-stories', '.agent-en-cours.json');
 const vivant = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
 const attendre = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/* ------------------------------------------- pause et arret, decides depuis la Tour */
+// La Tour de controle pose suivi-des-stories/.pause.json (pause) et .arret.json (liste des
+// stories dont le lancement est arrete). Un agent les consulte AVANT de commencer : un agent
+// deja au travail finit son etape, on ne le coupe jamais au milieu.
+const PAUSE = join(RACINE, 'suivi-des-stories', '.pause.json');
+const ARRET = join(RACINE, 'suivi-des-stories', '.arret.json');
+const cleStory = String(story || '').match(/\(([A-Z][A-Z0-9]+-\d+)\)\s*$/)?.[1];
+const enPause = () => existsSync(PAUSE);
+const arretee = () => {
+  try { return !!cleStory && JSON.parse(readFileSync(ARRET, 'utf8')).cles.includes(cleStory); } catch { return false; }
+};
+function sortirCarArretee() {
+  journal('⏹ arrêté depuis la Tour de contrôle : ne démarre pas');
+  // Meme forme qu'une reponse de Claude : n8n la lit comme les autres et termine le cycle.
+  process.stdout.write(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, result: JSON.stringify({
+    statut: 'arrete', resume: 'Lancement arrêté depuis la Tour de contrôle.',
+    prochaine_action: 'Aucune. Relancer la story depuis la Tour de contrôle si besoin.' }) }) + '\n');
+  process.exit(0);
+}
+
 async function prendreLeVerrou() {
-  let annonce = false;
+  let annonce = false, pauseAnnoncee = false;
   for (;;) {
+    if (arretee()) sortirCarArretee();
+    if (enPause()) {
+      if (!pauseAnnoncee) { journal('⏸ en pause : attend la reprise depuis la Tour de contrôle'); pauseAnnoncee = true; }
+      await attendre(5000);
+      continue;
+    }
     try {
       writeFileSync(VERROU, JSON.stringify({ pid: process.pid, agent, story, depuis: new Date().toISOString() }), { flag: 'wx' });
+      // Pause ou arret decides pendant qu'on prenait le verrou : on le rend et on recommence.
+      if (enPause() || arretee()) { rendreLeVerrou(); continue; }
+      if (pauseAnnoncee) journal('▶ reprise après la pause');
       return;
     } catch (e) {
       if (e.code !== 'EEXIST') throw e;

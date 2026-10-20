@@ -214,6 +214,39 @@ a.bug:hover{outline:1px solid var(--line)}
 pre.fiche{white-space:pre-wrap;font-family:var(--body);font-size:13px;margin:0;line-height:1.5}
 .offline{background:var(--crit-bg);color:var(--crit);border-radius:10px;padding:10px 14px;font-weight:600}
 button:disabled{opacity:.5;cursor:default}
+
+/* Pilotage : lancement, pause, arrêt */
+.btn-primary{background:var(--ana);color:#fff}
+.pilotage{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.etat-lancement{font-size:14px;min-width:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.confirm{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:var(--crit);font-weight:600}
+.pause-band{margin-top:8px;padding:9px 14px;border-radius:12px;background:var(--info-bg);border:1px dashed var(--info);font-size:13.5px}
+.zz{animation:glow 1.6s ease-in-out infinite alternate}
+.card.stopped{opacity:.65}
+.card .relancer{margin-top:4px;align-self:flex-start}
+.board-vide{grid-column:1/-1;display:flex;align-items:center;gap:18px;padding:30px 20px;flex-wrap:wrap}
+.board-vide svg{width:64px;height:64px;flex:none}
+.board-vide p{margin:4px 0 12px;color:var(--muted);max-width:60ch}
+.board:has(.board-vide){min-width:0;display:block}
+.histo{margin-top:12px;font-size:13px;color:var(--muted)}
+.histo summary{cursor:pointer;font-weight:600}
+.histo ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.toast.erreur{background:var(--crit);color:#fff}
+.portees{display:flex;flex-wrap:wrap;gap:8px}
+.portee{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:600;font-size:13px}
+.portee:has(input:checked){border-color:var(--ana);background:var(--ana-pale)}
+.tout{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.choix-stories{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.choix-stories li+li{border-top:1px solid var(--line)}
+.choix-stories label{display:grid;grid-template-columns:20px 64px 1fr auto;gap:8px;align-items:center;padding:8px 10px;cursor:pointer;font-size:13px}
+.choix-stories label:hover{background:var(--surface-2)}
+.choix-stories label.deja{opacity:.55;cursor:default}
+.choix-stories .k{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.choix-stories .t{min-width:0}
+.choix-stories .der{font-size:12px;color:var(--muted);white-space:nowrap}
+.choix-stories .der.good{color:var(--good)} .choix-stories .der.crit{color:var(--crit)}
+.estimation{font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -224,6 +257,7 @@ button:disabled{opacity:.5;cursor:default}
   </header>
 
   <div class="offline" id="hors-ligne" hidden>La Tour de contrôle ne répond plus. Relancez n8n/demarrer-n8n.cmd, ou dans un terminal : node supervision/serveur-supervision.mjs</div>
+  <div id="pilotage"></div>
   <div id="alert"></div>
 
   <section class="row-q">
@@ -247,6 +281,7 @@ button:disabled{opacity:.5;cursor:default}
   <section class="panel">
     <div class="panel-head"><h2>Le parcours des stories</h2><span class="count" id="board-count"></span></div>
     <div class="board-wrap"><div class="board" id="board"></div></div>
+    <div id="historique"></div>
   </section>
 
   <section class="row-b">
@@ -276,8 +311,8 @@ const ROLES={
   rap:{name:"Robot Rapporteur",short:"Rapporteur",color:"--rap"},
 };
 function robot(role,state,opts={}){
-  const c=state==="ko"?"var(--steel-dark)":`var(${ROLES[role].color})`, op=state==="off"?.45:1, ink="var(--fg)";
-  const eyes=state==="off"?`<path d="M23 25h6M35 25h6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>`
+  const c=state==="ko"?"var(--steel-dark)":`var(${ROLES[role].color})`, op=state==="off"?.45:state==="zz"?.6:1, ink="var(--fg)";
+  const eyes=(state==="off"||state==="zz")?`<path d="M23 25h6M35 25h6" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>`
     :state==="ko"?`<path d="M23 23l5 4M28 23l-5 4M36 23l5 4M41 23l-5 4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`
     :`<g class="eyes-open"><circle cx="26" cy="25" r="3.2" fill="#fff"/><circle cx="38" cy="25" r="3.2" fill="#fff"/></g>`;
   const tip=state==="on"?`class="glow"`:"";
@@ -298,8 +333,9 @@ function robot(role,state,opts={}){
     chest=`<rect x="26" y="40" width="12" height="7" rx="2" fill="#fff" opacity=".9"/><text x="32" y="46" text-anchor="middle" font-family="Chakra Petch,sans-serif" font-weight="700" font-size="7" fill="${c}">BUG</text>`;}
   if(role==="rap"){extra=`<circle cx="26" cy="25" r="5" fill="none" stroke="${ink}" stroke-width="1.6"/><circle cx="38" cy="25" r="5" fill="none" stroke="${ink}" stroke-width="1.6"/><line x1="31" y1="25" x2="33" y2="25" stroke="${ink}" stroke-width="1.6"/>`;
     hand=`<rect x="46" y="34" width="11" height="14" rx="1.5" fill="var(--surface)" stroke="${ink}" stroke-width="1.6"/><line x1="48.5" y1="38" x2="54.5" y2="38" stroke="${c}" stroke-width="1.4"/><line x1="48.5" y1="41" x2="54.5" y2="41" stroke="${c}" stroke-width="1.4"/><line x1="48.5" y1="44" x2="52.5" y2="44" stroke="${c}" stroke-width="1.4"/>`;}
-  const alert=state==="ko"?`<circle cx="52" cy="10" r="7" fill="var(--crit)"/><text x="52" y="14" text-anchor="middle" font-family="Chakra Petch,sans-serif" font-weight="700" font-size="11" fill="#fff">!</text>`:"";
-  return `<svg viewBox="0 0 64 64" role="img" aria-label="${ROLES[role].name}"><g opacity="${op}">${antenna}
+  const alert=state==="ko"?`<circle cx="52" cy="10" r="7" fill="var(--crit)"/><text x="52" y="14" text-anchor="middle" font-family="Chakra Petch,sans-serif" font-weight="700" font-size="11" fill="#fff">!</text>`
+    :state==="zz"?`<g class="zz" font-family="Chakra Petch,sans-serif" font-weight="700" fill="var(--muted)"><text x="47" y="15" font-size="9">z</text><text x="53" y="9" font-size="12">Z</text></g>`:"";
+  return `<svg viewBox="0 0 64 64" role="img" aria-label="${ROLES[role].name}${state==="zz"?" (en pause)":""}"><g opacity="${op}">${antenna}
     <rect x="18" y="14" width="28" height="21" rx="6" fill="${c}"/><rect x="15" y="21" width="3" height="8" rx="1.5" fill="${ink}"/><rect x="46" y="21" width="3" height="8" rx="1.5" fill="${ink}"/>
     ${eyes}${extra}<rect x="29" y="35" width="6" height="3" fill="${ink}"/><rect x="20" y="37" width="24" height="19" rx="4" fill="${c}"/>${chest}
     ${leftArm}<line x1="44" y1="41" x2="50" y2="45" stroke="${ink}" stroke-width="3" stroke-linecap="round"/>${hand}${feet}</g>${alert}</svg>`;
@@ -425,33 +461,143 @@ function choisirOnglet(qui) {
 
 /* ---------- Kanban ---------- */
 function carte(s, kind) {
-  const cls = [kind, s.travail ? 'working' : '', s.bloque ? 'blocked' : ''].join(' ');
+  const cls = [kind, s.travail ? 'working' : '', s.bloque ? 'blocked' : '', s.arretee ? 'stopped' : ''].join(' ');
   let h = `<article class="card ${cls}" data-fiche="${esc(s.cle)}" tabindex="0" title="Ouvrir la fiche de suivi"><span class="key">${esc(s.cle)}</span><span class="title">${esc(s.titre)}</span>`;
   if (s.travail) h += `<span class="meta">${esc(s.travail.action)}</span><span class="meta" data-depuis="${esc(s.travail.depuis)}">⏱ ${fmtDuree(Date.now() - new Date(s.travail.depuis))}</span>`;
+  else if (s.arretee) h += `<span class="chip wait">⏹ arrêtée</span>`;
   else if (s.bloque) h += `<span class="banner">🛑 Bloqué${s.raison ? ` : ${esc(s.raison)}` : ''}</span>`;
-  else if (s.attendSonTour) h += `<span class="chip wait">⏳ attend son tour</span>`;
-  if (s.colonne === 'a-valider') h += decisionsEnvoyees.has(s.cle) ? `<span class="chip wait">✔ décision envoyée</span>`
+  else if (s.attendSonTour) h += E.pause ? `<span class="chip wait">💤 en pause</span>` : `<span class="chip wait">⏳ attend son tour</span>`;
+  if (s.colonne === 'a-valider' && !s.arretee) h += decisionsEnvoyees.has(s.cle) ? `<span class="chip wait">✔ décision envoyée</span>`
     : `${s.attenteDepuis ? `<span class="meta">depuis ${esc(s.attenteDepuis)}</span>` : ''}<button class="btn btn-hum" data-review="${esc(s.cle)}">Examiner</button>`;
-  if (s.resultat && ['anomalies', 'rapporteur', 'termine'].includes(s.colonne)) h += s.resultat === 'reussi' ? `<span class="chip good">✓ test réussi</span>` : `<span class="chip crit">✗ test échoué</span>`;
+  if (s.resultatDuLancement && ['anomalies', 'rapporteur', 'termine'].includes(s.colonne)) h += s.resultatDuLancement === 'reussi' ? `<span class="chip good">✓ test réussi</span>` : `<span class="chip crit">✗ test échoué</span>`;
+  if ((s.colonne === 'termine' || s.bloque || s.arretee) && !s.travail) h += `<button class="btn btn-ghost small relancer" data-relancer="${esc(s.cle)}" data-titre="${esc(s.titre)}" title="Relancer le cycle de test de cette story">↻ Relancer</button>`;
   return h + '</article>';
 }
 function renderKanban() {
+  const duLancement = E.stories.filter(s => s.dansLancement);
+  if (!E.lancement || !duLancement.length) {
+    zone('board-count', '');
+    return zone('board', `<div class="board-vide">${iconTower()}<div><strong>Aucun lancement pour l'instant</strong>
+      <p>Choisissez les stories à tester : quelques-unes, celles du sprint actif ou tout le backlog. Rien ne démarre avant votre clic sur « Démarrer ».</p>
+      <button class="btn btn-primary" data-ouvrir-lancement>▶ Lancer des tests</button></div></div>`);
+  }
   zone('board', E.colonnes.map(col => {
-    const kind = KIND_DE_COLONNE[col.id], ici = E.stories.filter(s => s.colonne === col.id);
+    const kind = KIND_DE_COLONNE[col.id], ici = duLancement.filter(s => s.colonne === col.id);
     let icon, who = col.titre, st = '', stCls = '';
     if (kind === 'todo') icon = iconTodo();
     else if (kind === 'hum') { icon = iconHuman(); who = 'À valider (vous)'; st = ici.length ? 'à vous de jouer' : 'rien à valider'; stCls = ici.length ? 'on' : ''; }
     else if (kind === 'fin') icon = iconDone();
     else {
       const a = E.agents.find(x => x.colonne === col.id);
-      icon = robot(kind, { travail: 'on', bloque: 'ko' }[a.etat] || 'off'); who = ROLES[kind].short;
-      st = { travail: 'au travail', bloque: 'bloqué', attente: 'attend son tour', libre: 'libre' }[a.etat]; stCls = a.etat === 'travail' ? 'on' : a.etat === 'bloque' ? 'ko' : '';
+      icon = robot(kind, { travail: 'on', bloque: 'ko', pause: 'zz' }[a.etat] || 'off'); who = ROLES[kind].short;
+      st = { travail: 'au travail', bloque: 'bloqué', attente: 'attend son tour', pause: 'en pause', libre: 'libre' }[a.etat]; stCls = a.etat === 'travail' ? 'on' : a.etat === 'bloque' ? 'ko' : '';
     }
     return `<section class="col ${kind}" aria-label="${esc(who)}"><div class="col-head">${icon}<span class="who">${esc(who)}</span>${st ? `<span class="st ${stCls}">${st}</span>` : ''}<span class="count">${ici.length} stor${ici.length > 1 ? 'ies' : 'y'}</span></div>
       <div class="col-body">${ici.length ? ici.map(s => carte(s, kind)).join('') : `<p class="empty">Rien pour l'instant</p>`}</div></section>`;
   }).join(''));
-  zone('board-count', `${E.stories.length} stor${E.stories.length > 1 ? 'ies' : 'y'} suivie${E.stories.length > 1 ? 's' : ''}`);
+  const L = E.lancement;
+  zone('board-count', L.implicite ? `${L.nb} stor${L.nb > 1 ? 'ies' : 'y'}`
+    : `Lancement n° ${L.n} · ${PORTEES[L.portee]} · ${L.nb} stor${L.nb > 1 ? 'ies' : 'y'}`);
 }
+
+/* ---------- pilotage : lancement, pause, arrêt ---------- */
+const PORTEES = { choix: 'stories choisies', sprint: 'sprint actif', backlog: 'tout le backlog' };
+let confirmerArret = false;
+function renderPilotage() {
+  const L = E.lancement, enCours = L && !L.implicite && !L.fini && !L.arreteLe;
+  let etatTxt;
+  if (!L) etatTxt = '<b>Aucun lancement</b> · les robots attendent vos instructions';
+  else if (L.arreteLe) etatTxt = `<b>Lancement n° ${L.n} arrêté</b> à ${heure(L.arreteLe)} · ${L.termines}/${L.nb} stories terminées`;
+  else if (L.fini) etatTxt = `<b>Lancement${L.n ? ` n° ${L.n}` : ''} terminé</b> · ${L.nb} stor${L.nb > 1 ? 'ies' : 'y'} · ${L.reussis} réussie${L.reussis > 1 ? 's' : ''}, ${L.echoues} échouée${L.echoues > 1 ? 's' : ''}`;
+  else etatTxt = `<b>Lancement${L.n ? ` n° ${L.n}` : ''} en cours</b>${L.debut ? ` depuis ${heure(L.debut)}` : ''} · ${PORTEES[L.portee]} · ${L.termines}/${L.nb} stories terminées`;
+  const bandeau = E.pause ? `<div class="pause-band">💤 <b>En pause</b> depuis ${heure(E.pause.depuis)} : aucun robot ne démarre de nouvelle étape. Un robot déjà au travail finit la sienne.</div>` : '';
+  const pause = E.pause ? `<button class="btn btn-good" data-reprendre>▶ Reprendre</button>`
+    : `<button class="btn btn-ghost" data-pause ${enCours ? '' : 'disabled title="Aucun lancement en cours"'}>⏸ Pause</button>`;
+  const arret = !enCours ? '' : confirmerArret
+    ? `<span class="confirm">Arrêter ? Les stories non terminées ne seront plus traitées. <button class="btn btn-crit small" data-arreter-oui>Oui, arrêter</button> <button class="btn btn-ghost small" data-arreter-non>Annuler</button></span>`
+    : `<button class="btn btn-crit" data-arreter>⏹ Arrêter</button>`;
+  const lancer = `<button class="btn btn-primary" data-ouvrir-lancement>${enCours ? '＋ Ajouter des stories' : '▶ Lancer des tests'}</button>`;
+  zone('pilotage', `<div class="pilotage"><div class="etat-lancement">${etatTxt}</div><div class="actions">${pause}${arret}${lancer}</div></div>${bandeau}`);
+}
+function renderHistorique() {
+  zone('historique', E.historique.length ? `<details class="histo"><summary>Lancements précédents (${E.historique.length})</summary><ul>${E.historique.map(l =>
+    `<li><b>n° ${l.n}</b> · ${dateHeure(l.debut)} · ${PORTEES[l.portee] || ''} · ${l.nb} stor${l.nb > 1 ? 'ies' : 'y'}${l.arreteLe ? ' · arrêté' : ''}</li>`).join('')}</ul></details>` : '');
+}
+async function action(chemin, corps = {}) {
+  const r = await fetch(chemin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.erreur || `Erreur ${r.status}`);
+  return j;
+}
+async function piloter(chemin, message, corps) {
+  try { const j = await action(chemin, corps); toast(typeof message === 'function' ? message(j) : message); }
+  catch (e) { toast(e.message, true); }
+  confirmerArret = false; vus.pilotage = null; rafraichir();
+}
+
+/* ---------- panneau « Lancer des tests » ---------- */
+let listeLancement = { portee: 'sprint', stories: [], coches: new Set(), erreur: null };
+function ouvrirLancement() {
+  ouvrirTiroir(`<div class="d-head">${iconTower()}<div><h3 id="d-title">Lancer des tests</h3><p>Les stories sont lues dans votre Jira. Rien ne démarre avant votre clic sur « Démarrer ».</p></div><button class="d-close" id="d-close" aria-label="Fermer">×</button></div>
+    <div class="d-body"><div class="portees" role="radiogroup" aria-label="Quoi tester">
+      ${['sprint', 'backlog', 'choix'].map(p => `<label class="portee"><input type="radio" name="portee" value="${p}" ${p === listeLancement.portee ? 'checked' : ''}> ${{ sprint: 'Le sprint actif', backlog: 'Tout le backlog', choix: 'Des stories choisies' }[p]}</label>`).join('')}
+    </div><div id="liste-stories"></div></div>
+    <div class="d-foot"><div class="estimation" id="estimation"></div><div class="err" id="err" role="alert"></div>
+      <div class="d-actions"><button class="btn btn-ghost" id="annuler-lancement">Annuler</button><button class="btn btn-primary" id="demarrer" disabled>▶ Démarrer</button></div></div>`);
+  $('annuler-lancement').onclick = fermerTiroir;
+  $('demarrer').onclick = demarrer;
+  document.querySelectorAll('input[name=portee]').forEach(r => { r.onchange = () => chargerListe(r.value); });
+  chargerListe(listeLancement.portee);
+}
+async function chargerListe(portee) {
+  listeLancement = { portee, stories: [], coches: new Set(), erreur: null };
+  $('liste-stories').innerHTML = `<div class="thinking"><span class="dots"><i></i><i></i><i></i></span>Lecture de Jira…</div>`;
+  majEstimation();
+  try {
+    const r = await fetch(`/stories?portee=${portee === 'sprint' ? 'sprint' : 'backlog'}`), j = await r.json();
+    if (!r.ok) throw new Error(j.erreur);
+    if (listeLancement.portee !== portee) return;
+    listeLancement.stories = j.stories;
+    // Sprint ou backlog : tout est coché d'office. Au choix : rien n'est coché.
+    if (portee !== 'choix') j.stories.filter(s => !s.dansLancement).forEach(s => listeLancement.coches.add(s.cle));
+  } catch (e) { listeLancement.erreur = e.message; }
+  dessinerListe();
+}
+const disponibles = () => listeLancement.stories.filter(s => !s.dansLancement);
+function dessinerListe() {
+  const L = listeLancement;
+  if (!$('liste-stories')) return;
+  if (L.erreur) { $('liste-stories').innerHTML = `<p class="err-box">${esc(L.erreur)}</p>`; return majEstimation(); }
+  if (!L.stories.length) { $('liste-stories').innerHTML = `<p class="vide">Aucune story ${L.portee === 'sprint' ? 'dans le sprint actif' : 'dans le projet'}.</p>`; return majEstimation(); }
+  const date = (iso) => iso ? ' le ' + new Date(iso).toLocaleDateString('fr-FR') : '';
+  $('liste-stories').innerHTML = `<label class="tout"><input type="checkbox" id="tout" ${L.coches.size && L.coches.size === disponibles().length ? 'checked' : ''}> Tout cocher</label>
+    <ul class="choix-stories">${L.stories.map(s => `<li><label class="${s.dansLancement ? 'deja' : ''}"><input type="checkbox" value="${esc(s.cle)}" ${L.coches.has(s.cle) ? 'checked' : ''} ${s.dansLancement ? 'disabled' : ''}>
+      <span class="k">${esc(s.cle)}</span><span class="t">${esc(s.titre)}</span>
+      <span class="der ${s.resultat === 'reussi' ? 'good' : s.resultat === 'echoue' ? 'crit' : ''}">${s.dansLancement ? 'déjà en cours' : s.resultat === 'reussi' ? `✓ réussi${date(s.joueLe)}` : s.resultat === 'echoue' ? `✗ échoué${date(s.joueLe)}` : 'jamais testée'}</span></label></li>`).join('')}</ul>`;
+  $('tout').onchange = (e) => { disponibles().forEach(s => e.target.checked ? L.coches.add(s.cle) : L.coches.delete(s.cle)); dessinerListe(); };
+  document.querySelectorAll('.choix-stories input').forEach(c => {
+    c.onchange = () => { c.checked ? L.coches.add(c.value) : L.coches.delete(c.value); $('tout').checked = L.coches.size === disponibles().length; majEstimation(); };
+  });
+  majEstimation();
+}
+function majEstimation() {
+  const n = listeLancement.coches.size;
+  if (!$('demarrer')) return;
+  $('demarrer').disabled = !n;
+  $('estimation').innerHTML = n ? `<b>${n} stor${n > 1 ? 'ies' : 'y'}</b> · jusqu'à ${n} validation${n > 1 ? 's' : ''} à faire (aucune pour un cas déjà approuvé dont la story n'a pas changé) · environ ${2 * n} à ${4 * n} $ de Claude · les robots travaillent l'un après l'autre`
+    : 'Cochez au moins une story.';
+}
+async function demarrer() {
+  const L = listeLancement, cles = [...L.coches];
+  const titres = Object.fromEntries(L.stories.filter(s => L.coches.has(s.cle)).map(s => [s.cle, s.titre]));
+  $('demarrer').disabled = true; $('err').textContent = '';
+  try {
+    const j = await action('/lancer', { portee: L.portee, cles, titres });
+    fermerTiroir(); vus.pilotage = null; rafraichir();
+    toast(j.ajoute ? `${cles.length} stor${cles.length > 1 ? 'ies ajoutées' : 'y ajoutée'} au lancement n° ${j.n}` : `Lancement n° ${j.n} démarré : ${cles.length} stor${cles.length > 1 ? 'ies' : 'y'}`);
+  } catch (e) { $('err').textContent = e.message; $('demarrer').disabled = false; }
+}
+
 
 /* ---------- résultats ---------- */
 function renderResultats() {
@@ -485,7 +631,7 @@ function renderFiltres() {
 function renderJournal() {
   const lignes = E.evenements.filter(e => filtre === 'all' || ROLE_DE[e.qui] === filtre).slice(0, 120);
   zone('log', lignes.length ? lignes.map(e => {
-    const vous = e.qui === 'n8n' && /APPROUVÉ par|REFUSÉ par/.test(e.quoi);
+    const vous = e.qui === 'vous' || (e.qui === 'n8n' && /APPROUVÉ par|REFUSÉ par/.test(e.quoi));
     const role = ROLE_DE[e.qui];
     const ic = vous ? iconHuman() : role ? robot(role, 'on') : iconTower();
     const qui = vous ? 'Vous' : role ? ROLES[role].short : e.qui;
@@ -539,11 +685,23 @@ async function ouvrirFiche(cle) {
   try { const r = await fetch(`/fiche?cle=${encodeURIComponent(cle)}`); $('fiche').textContent = await r.text(); }
   catch { $('fiche').textContent = 'Impossible de lire la fiche.'; }
 }
-function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 3800); }
+function toast(t, erreur = false) {
+  const el = $('toast'); el.textContent = t; el.classList.toggle('erreur', erreur); el.classList.add('show');
+  clearTimeout(toast.minuteur); toast.minuteur = setTimeout(() => el.classList.remove('show'), erreur ? 7000 : 3800);
+}
 
 /* ---------- événements ---------- */
 document.addEventListener('click', (e) => {
   const v = e.target.closest('[data-review]'); if (v) { e.stopPropagation(); return ouvrirValidation(v.dataset.review); }
+  const rl = e.target.closest('[data-relancer]');
+  if (rl) { rl.disabled = true; return piloter('/lancer', j => `${rl.dataset.relancer} relancée (lancement n° ${j.n})`,
+    { portee: 'choix', cles: [rl.dataset.relancer], titres: { [rl.dataset.relancer]: rl.dataset.titre } }); }
+  if (e.target.closest('[data-ouvrir-lancement]')) return ouvrirLancement();
+  if (e.target.closest('[data-pause]')) return piloter('/pause', 'Pause demandée : les robots finissent leur étape en cours');
+  if (e.target.closest('[data-reprendre]')) return piloter('/reprendre', 'Reprise : les robots repartent');
+  if (e.target.closest('[data-arreter]')) { confirmerArret = true; vus.pilotage = null; return renderPilotage(); }
+  if (e.target.closest('[data-arreter-non]')) { confirmerArret = false; vus.pilotage = null; return renderPilotage(); }
+  if (e.target.closest('[data-arreter-oui]')) return piloter('/arreter', j => `Lancement arrêté${j.arretees.length ? ` : ${j.arretees.join(', ')}` : ''}${j.nonJoints.length ? `. n8n n'a pas répondu pour ${j.nonJoints.join(', ')}` : ''}`);
   if (e.target.closest('[data-analyse]')) return demanderAnalyse();
   const f = e.target.closest('[data-f]'); if (f) { filtre = f.dataset.f; renderFiltres(); renderJournal(); return; }
   const c = e.target.closest('[data-fiche]'); if (c) return ouvrirFiche(c.dataset.fiche);
@@ -563,7 +721,7 @@ async function rafraichir() {
     E = await (await fetch('/etat', { cache: 'no-store' })).json();
     for (const cle of [...decisionsEnvoyees]) if (E.stories.find(s => s.cle === cle)?.colonne !== 'a-valider') decisionsEnvoyees.delete(cle);
     $('hors-ligne').hidden = true;
-    renderTete(); renderAlerte(); renderJauge(); renderRegles(); renderClaude(); renderKanban(); renderResultats(); renderJournal();
+    renderTete(); renderPilotage(); renderHistorique(); renderAlerte(); renderJauge(); renderRegles(); renderClaude(); renderKanban(); renderResultats(); renderJournal();
   } catch {
     $('hors-ligne').hidden = false;
   }
