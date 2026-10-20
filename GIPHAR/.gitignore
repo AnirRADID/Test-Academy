@@ -11,3 +11,4 @@ supervision/.analyse-claude.json
 suivi-des-stories/.pause.json
 suivi-des-stories/.arret.json
 suivi-des-stories/lancements.json
+suivi-des-stories/.execution-en-direct.json

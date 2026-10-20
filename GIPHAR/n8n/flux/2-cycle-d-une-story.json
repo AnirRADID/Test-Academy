@@ -1450,7 +1450,7 @@
     },
     {
       "id": "46748ce5-49b5-437c-9d0d-4a1083ce0678",
-      "name": "🗂 Jira : colonne Terminé",
+      "name": "🗂 Jira : colonne finale",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
@@ -1470,7 +1470,7 @@
           "value": {
             "cleStory": "={{ $('Contexte de la story').first().json.cleStory }}",
             "titreStory": "={{ $('Contexte de la story').first().json.titreStory }}",
-            "colonne": "Terminé",
+            "colonne": "={{ $('Réponse rapporteur').last().json.verdict_story === 'echouee' ? 'Anomalies' : 'Terminé' }}",
             "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
             "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
           },
@@ -1650,6 +1650,121 @@
         "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"⏹ cycle arrêté depuis la Tour de contrôle : étiquettes qa-en-cours et qa-a-valider retirées\""
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Un element par bug Jira declare ou retrouve par le gestionnaire d'anomalies.\nconst r = $('Réponse gestionnaire').last().json;\nreturn (r.anomalies || [])\n  .filter(a => /^[A-Z][A-Z0-9]+-\\d+$/.test(String(a.cle || '')))\n  .map(a => ({ json: { cle: a.cle, titre: String(a.titre || '').slice(0, 150), cas: String(a.cas || ''), nouveau: a.nouveau === true } }));"
+      },
+      "id": "021e2ab6-ee83-4766-9d86-9282a65608b2",
+      "name": "🐞 Bugs de la campagne",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5260,
+        360
+      ]
+    },
+    {
+      "id": "af88d3f1-a5b0-4874-9307-a473b4eed86d",
+      "name": "📓 Journal : bug signalé",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        5480,
+        260
+      ],
+      "parameters": {
+        "command": "=cd /d \"{{ $('Contexte de la story').first().json.dossierProjet }}\" && node n8n/outils/ecrire-au-journal.mjs \"{{ String($('Contexte de la story').first().json.titreStory || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} ({{ $('Contexte de la story').first().json.cleStory }})\" \"n8n\" \"🐞 bug {{ $json.cle }} ({{ $json.nouveau ? 'nouveau' : 'déjà connu' }}) : {{ String($json.titre || '').replace(/[\"&|<>^%!\\r\\n]/g, ' ') }} · cas {{ $json.cas }}\""
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "d97251a4-aa01-45b4-9921-2738742764cf",
+      "name": "🗂 Jira : bug en colonne Anomalies",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        5480,
+        460
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "QaHomeyDeplacerT",
+          "cachedResultName": "QA Homey - 3. Déplacer le ticket dans Jira"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "cleStory": "={{ $json.cle }}",
+            "titreStory": "={{ '🐞 ' + $json.titre }}",
+            "colonne": "Anomalies",
+            "jiraSite": "={{ $('Contexte de la story').first().json.jiraSite }}",
+            "dossierProjet": "={{ $('Contexte de la story').first().json.dossierProjet }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "cleStory",
+              "displayName": "cleStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "titreStory",
+              "displayName": "titreStory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "colonne",
+              "displayName": "colonne",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jiraSite",
+              "displayName": "jiraSite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dossierProjet",
+              "displayName": "dossierProjet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
     }
   ],
   "connections": {
@@ -1975,6 +2090,11 @@
             "node": "🗂 Jira : colonne Rapporteur",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "🐞 Bugs de la campagne",
+            "type": "main",
+            "index": 0
           }
         ],
         [
@@ -2040,7 +2160,7 @@
             "index": 0
           },
           {
-            "node": "🗂 Jira : colonne Terminé",
+            "node": "🗂 Jira : colonne finale",
             "type": "main",
             "index": 0
           }
@@ -2142,6 +2262,22 @@
         [
           {
             "node": "📓 Journal : cycle arrêté",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🐞 Bugs de la campagne": {
+      "main": [
+        [
+          {
+            "node": "📓 Journal : bug signalé",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🗂 Jira : bug en colonne Anomalies",
             "type": "main",
             "index": 0
           }

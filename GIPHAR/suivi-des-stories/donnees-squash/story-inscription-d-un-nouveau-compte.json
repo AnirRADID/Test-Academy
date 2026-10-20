@@ -1,0 +1,26 @@
+{
+  "story_jira": "HVC-6",
+  "exigence": {
+    "nom": "HVC-6 - Inscription d'un nouveau compte",
+    "description": "En tant que visiteur, je veux créer un compte avec nom d'utilisateur, email et mot de passe, afin de pouvoir réserver ou devenir hôte.\n\nCritères d'acceptation :\n- Le formulaire exige nom d'utilisateur, email, mot de passe, confirmation du mot de passe, et acceptation des conditions (case à cocher obligatoire).\n- Une inscription réussie connecte l'utilisateur ou confirme la création du compte.\n- Un mot de passe et sa confirmation différents doivent être rejetés (à vérifier).\n\nPriorité : Haute (Must have).",
+    "criticite": "CRITICAL"
+  },
+  "cas": {
+    "reference": "TC-HVC-6",
+    "nom": "TC-HVC-6 - Inscription d'un nouveau compte",
+    "description": "Automatise par tests/tc-hvc-6-inscription-compte.spec.ts. Verifie l exigence HVC-6.",
+    "prerequis": "",
+    "importance": "HIGH",
+    "pas": [
+      {
+        "action": "Ouvrir la page d'accueil, cliquer sur S'inscrire, remplir le formulaire avec nom d'utilisateur, email, mot de passe et confirmation identiques, accepter les conditions, puis valider.",
+        "resultat_attendu": "Le compte est cree (ou l utilisateur est connecte)."
+      },
+      {
+        "action": "Rouvrir le formulaire d'inscription et le remplir avec un mot de passe et une confirmation differents, puis valider.",
+        "resultat_attendu": "Un message d erreur signale que les mots de passe ne correspondent pas."
+      }
+    ]
+  },
+  "iteration_id": 1
+}

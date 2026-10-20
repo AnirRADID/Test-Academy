@@ -27,6 +27,8 @@
  *   /cas?cle=         le cas de test d'une story, lu dans Squash (pour la validation)
  *   /stories?portee=  les stories du sprint actif (sprint) ou du backlog, lues dans Jira par
  *                     le flux n8n « 4. Lister les stories »
+ *   /execution        l'execution Playwright en cours (test, pas, compteurs)
+ *   /execution/ecran?w=0  capture JPEG du navigateur pilote par le worker 0
  *   POST /lancer      { portee: "choix"|"sprint"|"backlog", cles: ["HVC-6", …] }
  *   POST /pause, POST /reprendre, POST /arreter
  *   POST /valider     { cle, decision: "Approuver"|"Refuser", remarques }
@@ -37,7 +39,7 @@
  */
 import http from 'node:http';
 import { spawn } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync, statSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ecrire } from '../n8n/outils/ecrire-au-journal.mjs';
@@ -52,6 +54,7 @@ const PAUSE = join(SUIVI, '.pause.json');
 const ARRET = join(SUIVI, '.arret.json');
 const LANCEMENTS = join(SUIVI, 'lancements.json');
 const N8N = process.env.N8N_URL || 'http://127.0.0.1:5678';
+const EXECUTION = process.env.EXECUTION_EN_DIRECT || join(SUIVI, '.execution-en-direct.json');
 const SQUASH_MJS = join(RACINE, '.claude', 'skills', 'competence-piloter-squash', 'squash.mjs');
 const PORT = Number(process.env.SUPERVISION_PORT || 5680);
 const JIRA = 'https://testacademy.atlassian.net';
@@ -59,14 +62,17 @@ const JIRA = 'https://testacademy.atlassian.net';
 /* --------------------------------------------------------------- l'equipe */
 // Les colonnes du Kanban, dans l'ordre : une par agent, plus « À faire », « À valider »
 // (vous) et « Terminé ». Ce sont aussi les colonnes du tableau Jira. Une story bloquee
-// reste dans la colonne de son agent, marquee « bloquée ».
+// reste dans la colonne de son agent, marquee « bloquée ». Une story dont le test a echoue
+// finit dans « Anomalies » (avec ses tickets Bug), pas dans « Terminé ».
+// Les titres sont exactement les noms des colonnes du tableau Jira : la Tour verifie, avant
+// chaque lancement, que le tableau Jira a bien ces colonnes, dans cet ordre.
 export const COLONNES = [
   { id: 'a-faire', titre: 'À faire', agent: null },
   { id: 'analyste', titre: 'Analyste', agent: 'agent-analyste' },
   { id: 'a-valider', titre: 'À valider', agent: null },
   { id: 'automaticien', titre: 'Automaticien', agent: 'agent-automaticien' },
   { id: 'executant', titre: 'Exécutant', agent: 'agent-executant' },
-  { id: 'anomalies', titre: "Gestionnaire d'anomalies", agent: 'agent-gestionnaire-anomalies' },
+  { id: 'anomalies', titre: 'Anomalies', agent: 'agent-gestionnaire-anomalies' },
   { id: 'rapporteur', titre: 'Rapporteur', agent: 'agent-rapporteur' },
   { id: 'termine', titre: 'Terminé', agent: null },
 ];
@@ -193,12 +199,14 @@ async function rafraichirSquash(force = false) {
 export function colonneApres(ev) {
   const q = ev.quoi;
   if (ev.qui === 'n8n') {
-    if (/demandée depuis Claude/.test(q)) return { colonne: 'a-faire', bloque: false, arretee: false };
-    if (/cycle démarré/.test(q)) return { colonne: 'analyste', bloque: false, arretee: false };
+    if (/demandée depuis Claude/.test(q)) return { colonne: 'a-faire', bloque: false, arretee: false, fini: false };
+    if (/cycle démarré/.test(q)) return { colonne: 'analyste', bloque: false, arretee: false, fini: false };
     if (/attend votre validation/.test(q)) return { colonne: 'a-valider' };
     if (/REFUSÉ/.test(q)) return { colonne: 'analyste' };
     if (/APPROUVÉ|passé à « Approuvé »/.test(q)) return { colonne: 'automaticien' };
-    if (/cycle terminé/.test(q)) return { colonne: 'termine', bloque: false };
+    if (/cycle terminé/.test(q)) return /Verdict : echouee/.test(q)
+      ? { colonne: 'anomalies', bloque: false, fini: true }
+      : { colonne: 'termine', bloque: false, fini: true };
     if (/cycle arrêté/.test(q)) return { arretee: true };
     if (/cycle interrompu/.test(q)) return { bloque: true };
     return {};
@@ -258,15 +266,22 @@ function etat() {
   // --- les stories : celles du journal, plus celles du plan Squash -----------------
   // Leur colonne ne tient compte que de ce qui s'est passe depuis le debut du lancement.
   const stories = {};
-  const story = (cle, titre) => stories[cle] ??= { cle, titre: titre || cle, colonne: null, bloque: false, arretee: false, raison: null };
+  const story = (cle, titre) => stories[cle] ??= { cle, titre: titre || cle, colonne: null, bloque: false, arretee: false, fini: false, raison: null };
+  // Les tickets Bug, par story : lignes « 🐞 bug HVC-14 (nouveau) : titre · cas TC-HVC-6 ».
+  const bugsParStory = {};
   for (const ev of evenements) {
-    if (!ev.cle) continue;
+    const b = ev.qui === 'n8n' && ev.quoi.match(/^🐞 bug ([A-Z][A-Z0-9]+-\d+) \((nouveau|déjà connu)\) : (.*?) · cas TC-([A-Z][A-Z0-9]+-\d+)/);
+    if (b) (bugsParStory[b[4]] ??= {})[b[1]] = { cle: b[1], nouveau: b[2] === 'nouveau', titre: b[3].trim(), lien: `${JIRA}/browse/${b[1]}` };
+  }
+  for (const ev of evenements) {
+    if (!ev.cle || ev.story?.startsWith('🐞')) continue; // un ticket Bug n'est pas une story
     const s = story(ev.cle, ev.story.replace(/\s*\([^)]*\)\s*$/, ''));
     const ref = ev.quoi.match(/\b(TC-[A-Z][A-Z0-9]+-\d+)\b/)?.[1];
     if (ref && ref.endsWith(`-${ev.cle.split('-').pop()}`)) s.referenceCas = ref;
     if (!membres.has(ev.cle) || !dansLeLancement(ev)) continue;
-    const { colonne, bloque, arretee } = colonneApres(ev);
+    const { colonne, bloque, arretee, fini } = colonneApres(ev);
     if (colonne) s.colonne = colonne;
+    if (fini !== undefined) s.fini = fini;
     if (bloque === true) { s.bloque = true; if (/^🛑 bloqué/.test(ev.quoi)) s.raison = raisonDuBlocage(ev.quoi); }
     if (bloque === false) { s.bloque = false; s.raison = null; }
     if (arretee !== undefined) s.arretee = arretee;
@@ -286,10 +301,11 @@ function etat() {
     const f = fiches[s.cle];
     if (f?.titre) s.titre = f.titre;
     s.dansLancement = membres.has(s.cle);
-    if (!s.dansLancement) s.colonne = null;
+    s.bugs = Object.values(bugsParStory[s.cle] || {});
+    if (!s.dansLancement) { s.colonne = null; s.fini = false; }
     else {
       s.colonne ??= 'a-faire';
-      if (lancement.arreteLe && s.colonne !== 'termine') s.arretee = true;
+      if (lancement.arreteLe && !s.fini) s.arretee = true;
     }
     // Le resultat Squash ne compte pour le Kanban que s'il date de ce lancement.
     s.resultatDuLancement = s.dansLancement && s.resultat && (!lancement.debut || (s.joueLe && s.joueLe >= lancement.debut)) ? s.resultat : null;
@@ -299,7 +315,7 @@ function etat() {
       const action = [...evenements].reverse().find(e => e.cle === s.cle && e.qui === verrou.agent && !/^démarre$|attend son tour|^⏸|^▶ reprise/.test(e.quoi));
       s.travail.action = action?.quoi || 'démarre';
     }
-    s.attendSonTour = s.dansLancement && !enTravail && !s.bloque && !s.arretee
+    s.attendSonTour = s.dansLancement && !enTravail && !s.bloque && !s.arretee && !s.fini
       && ['a-faire', 'analyste', 'automaticien', 'executant', 'anomalies', 'rapporteur'].includes(s.colonne);
     s.lienValidation = s.colonne === 'a-valider' ? f?.lienValidation || null : null;
     s.attenteDepuis = s.colonne === 'a-valider'
@@ -315,7 +331,7 @@ function etat() {
   // --- les agents ------------------------------------------------------------------
   const agents = AGENTS.map((a) => {
     const colonne = colonneDeLAgent[a.nom];
-    const ici = duLancement.filter(s => s.colonne === colonne && !s.arretee);
+    const ici = duLancement.filter(s => s.colonne === colonne && !s.arretee && !s.fini);
     const travail = verrou?.agent === a.nom;
     const bloque = !travail && ici.some(s => s.bloque);
     const etat = travail ? 'travail' : bloque ? 'bloque' : pause && ici.length ? 'pause' : ici.length ? 'attente' : 'libre';
@@ -326,10 +342,11 @@ function etat() {
   const resume = lancement && {
     n: lancement.n, debut: lancement.debut, portee: lancement.portee, implicite: !!lancement.implicite,
     arreteLe: lancement.arreteLe || null, nb: duLancement.length,
-    termines: duLancement.filter(s => s.colonne === 'termine').length,
+    termines: duLancement.filter(s => s.fini).length,
+    avecAnomalies: duLancement.filter(s => s.fini && s.colonne === 'anomalies').length,
     reussis: duLancement.filter(s => s.resultatDuLancement === 'reussi').length,
     echoues: duLancement.filter(s => s.resultatDuLancement === 'echoue').length,
-    fini: duLancement.length > 0 && duLancement.every(s => s.colonne === 'termine' || s.arretee),
+    fini: duLancement.length > 0 && duLancement.every(s => s.fini || s.arretee),
   };
   const historique = lireLancements().slice(0, -1).slice(-5).reverse()
     .map(l => ({ n: l.n, debut: l.debut, portee: l.portee, nb: l.cles.length, arreteLe: l.arreteLe || null }));
@@ -432,6 +449,7 @@ async function listerStories(portee) {
   let donnees;
   try { donnees = JSON.parse(texte); } catch { throw new Error(`Réponse de n8n illisible (HTTP ${r.status}).`); }
   if (!r.ok) throw new Error(donnees.erreur || `n8n a répondu HTTP ${r.status}.`);
+  donnees.verification = verifierTableau(donnees.colonnes);
   // On ajoute ce que la Tour sait deja : dernier resultat Squash, presence dans le lancement.
   const e = etat();
   for (const s of donnees.stories) {
@@ -439,10 +457,31 @@ async function listerStories(portee) {
     s.resultat = connue?.resultat || null;
     s.joueLe = connue?.joueLe || null;
     // « deja en cours » : dans le lancement en cours, ni terminee, ni bloquee, ni arretee.
-    s.dansLancement = !!connue?.dansLancement && connue.colonne !== 'termine' && !connue.bloque && !connue.arretee
+    s.dansLancement = !!connue?.dansLancement && !connue.fini && !connue.bloque && !connue.arretee
       && !e.lancement?.fini && !e.lancement?.arreteLe;
   }
   return donnees;
+}
+
+// Le tableau Jira doit avoir exactement les colonnes de la Tour, dans le meme ordre :
+// sinon n8n ne peut pas deplacer les tickets et Jira ne montre pas la meme chose que la Tour.
+const norm = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+function verifierTableau(colonnesJira) {
+  const attendues = COLONNES.map(c => c.titre);
+  if (!Array.isArray(colonnesJira) || !colonnesJira.length)
+    return { ok: false, attendues, jira: [], manquantes: attendues, enTrop: [], ordre: false,
+             message: "Impossible de lire les colonnes du tableau Jira (le flux n8n 4 est-il à jour et publié ?)." };
+  const jira = colonnesJira.map(String);
+  const manquantes = attendues.filter(a => !jira.some(j => norm(j) === norm(a)));
+  const enTrop = jira.filter(j => !attendues.some(a => norm(a) === norm(j)));
+  const communes = jira.filter(j => attendues.some(a => norm(a) === norm(j)));
+  const ordre = communes.every((j, i) => norm(j) === norm(attendues.filter(a => communes.some(c => norm(c) === norm(a)))[i]));
+  const ok = !manquantes.length && !enTrop.length && ordre;
+  return { ok, attendues, jira, manquantes, enTrop, ordre,
+    message: ok ? `Le tableau Jira correspond à la Tour (${attendues.length} colonnes).`
+      : [manquantes.length && `Colonnes à créer dans Jira : ${manquantes.join(', ')}.`,
+         enTrop.length && `Colonnes en trop dans Jira : ${enTrop.join(', ')}.`,
+         !ordre && `Ordre attendu : ${attendues.join(' → ')}.`].filter(Boolean).join(' ') };
 }
 
 async function lancer({ portee, cles, titres }) {
@@ -452,7 +491,7 @@ async function lancer({ portee, cles, titres }) {
   const e = etat();
   const enCours = e.lancement && !e.lancement.implicite && !e.lancement.fini && !e.lancement.arreteLe;
   const dejaEnRoute = enCours ? cles.filter(c => { const s = e.stories.find(x => x.cle === c);
-    return s?.dansLancement && s.colonne !== 'termine' && !s.arretee && !s.bloque; }) : [];
+    return s?.dansLancement && !s.fini && !s.arretee && !s.bloque; }) : [];
   if (dejaEnRoute.length) throw new Error(`Déjà en cours dans ce lancement : ${dejaEnRoute.join(', ')}.`);
 
   // Le lancement commence ici : n8n ecrit au journal des qu'il recoit la demande.
@@ -505,7 +544,7 @@ function reprendre() {
 async function arreter() {
   const e = etat();
   if (!e.lancement || e.lancement.implicite || e.lancement.fini || e.lancement.arreteLe) throw new Error('Aucun lancement en cours.');
-  const restantes = e.stories.filter(s => s.dansLancement && s.colonne !== 'termine');
+  const restantes = e.stories.filter(s => s.dansLancement && !s.fini);
   writeFileSync(ARRET, JSON.stringify({ cles: [...new Set([...lireArret(), ...restantes.map(s => s.cle)])] }));
   const lancements = lireLancements();
   lancements.at(-1).arreteLe = new Date().toISOString();
@@ -517,6 +556,37 @@ async function arreter() {
     catch { nonJoints.push(s.cle); }
   }
   return { arretees: restantes.map(s => s.cle), nonJoints };
+}
+
+/* ------------------------------------------- l'execution Playwright, en direct */
+// reporters/en-direct-reporter.ts ecrit l'etat de l'execution ; l'ecran se capture par le port
+// de debogage du navigateur (9300 + numero du worker, cf. playwright.config.ts).
+function lireExecution() {
+  try {
+    const e = JSON.parse(lire(EXECUTION));
+    // Une execution « en cours » sans nouvelle depuis 20 minutes a ete interrompue.
+    if (e.enCours && Date.now() - statSync(EXECUTION).mtimeMs > 20 * 60000) { e.enCours = false; e.interrompue = true; e.workers = {}; }
+    return e;
+  } catch { return null; }
+}
+async function capturerEcran(indice) {
+  const port = 9300 + Number(indice);
+  if (!Number.isInteger(port) || port < 9300 || port > 9363) throw new Error('écran inconnu');
+  const pages = await (await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1500) })).json();
+  const cible = pages.filter(x => x.type === 'page').at(-1);
+  if (!cible) throw new Error('aucune page ouverte');
+  return new Promise((ok, ko) => {
+    const ws = new WebSocket(cible.webSocketDebuggerUrl);
+    const delai = setTimeout(() => { try { ws.close(); } catch {} ko(new Error('pas de réponse')); }, 3000);
+    ws.onopen = () => ws.send(JSON.stringify({ id: 1, method: 'Page.captureScreenshot', params: { format: 'jpeg', quality: 60 } }));
+    ws.onmessage = (m) => {
+      const r = JSON.parse(m.data);
+      if (r.id !== 1) return;
+      clearTimeout(delai); ws.close();
+      r.result?.data ? ok({ image: Buffer.from(r.result.data, 'base64'), url: cible.url, titre: cible.title }) : ko(new Error('capture refusée'));
+    };
+    ws.onerror = () => { clearTimeout(delai); ko(new Error('navigateur injoignable')); };
+  });
 }
 
 /* ------------------------------------------- l'analyse de Claude, a la demande */
@@ -614,6 +684,14 @@ const serveur = http.createServer(async (req, res) => {
       const f = lireFiches()[url.searchParams.get('cle')];
       return f ? repondre(res, 200, 'text/plain', lire(join(SUIVI, f.fichier)))
                : repondre(res, 404, 'text/plain', 'Pas encore de fiche de suivi pour cette story.');
+    }
+    if (url.pathname === '/execution') return json(res, 200, lireExecution() || { enCours: false, jamais: true });
+    if (url.pathname === '/execution/ecran') {
+      try {
+        const c = await capturerEcran(url.searchParams.get('w') || 0);
+        res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Cache-Control': 'no-store', 'X-Page-Url': encodeURI(c.url).slice(0, 500) });
+        return res.end(c.image);
+      } catch (e) { return json(res, 404, { erreur: e.message }); }
     }
     if (url.pathname === '/stories') {
       try { return json(res, 200, await listerStories(url.searchParams.get('portee'))); }

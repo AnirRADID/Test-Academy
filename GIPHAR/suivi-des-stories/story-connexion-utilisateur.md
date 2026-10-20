@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Où en est-on** | Terminé |
-| **Prochaine action** | Aucune |
+| **Où en est-on** | Étape 2 sur 6 — cas de test déjà validé, story inchangée |
+| **Prochaine action** | Automatisation du cas par l'agent automaticien |
 | **Story Jira** | [Connexion utilisateur](https://testacademy.atlassian.net/browse/HVC-7) |
-| **Dernière mise à jour** | 20/10/2026 10:23 par l'agent rapporteur |
+| **Dernière mise à jour** | 20/10/2026 17:53 par l'agent analyste |
 
 ## 1. Cas de test rédigé — agent analyste
 
@@ -38,6 +38,10 @@ Si vous refusez le cas en citant ces points, il sera corrigé au prochain passag
 ## 2. Validation humaine
 
 Cas validé le 20/10/2026 12:18. Remarques du valideur : aucune.
+
+Cas déjà approuvé, story inchangée depuis : validation non redemandée (passage du
+20/10/2026 17:53). Le titre et la description de la story dans Jira n'ont pas changé depuis
+la validation : seules les étiquettes de suivi ont bougé.
 
 ## 3. Test automatisé — agent automaticien
 

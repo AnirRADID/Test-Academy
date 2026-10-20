@@ -218,6 +218,21 @@ Rien ne démarre tout seul : c'est vous qui lancez, depuis la Tour de contrôle.
   traitées. Un cas qui attendait votre validation est refusé « pour arrêt », ce qui termine
   proprement son cycle. Dans Jira, les étiquettes `qa-en-cours` / `qa-a-valider` sont retirées.
 - **↻ Relancer** : sur chaque carte terminée, bloquée ou arrêtée.
+- **Vérification du tableau Jira** : à chaque ouverture du panneau « Lancer des tests », la
+  Tour compare les colonnes du tableau Jira aux siennes (mêmes noms, même ordre). Au moindre
+  écart, elle dit quoi corriger et **Démarrer** reste grisé.
+- **Anomalies** : une story dont le test échoue finit dans la colonne **Anomalies** (dans la
+  Tour comme dans Jira), pas dans Terminé. Ses tickets Bug sont affichés sur sa carte
+  (🐞 HVC-14 · nouveau / déjà connu, cliquables) et placés eux aussi dans la colonne
+  Anomalies du tableau Jira.
+- **🖥 Exécution** : une petite fenêtre montre, en direct, l'écran du navigateur piloté par
+  les tests Playwright (essai de l'automaticien ou campagne), le test et le pas en cours, et
+  l'avancement. Un point rouge sur le bouton signale qu'une exécution est en cours.
+
+> ⚠ **Ne redémarrez pas n8n pendant un lancement en cours, même en pause.** Les cycles des
+> stories qui ne sont pas en attente de votre validation seraient perdus : il faudrait les
+> relancer (↻ Relancer). Les validations en attente, elles, survivent à un redémarrage.
+> Pour redémarrer sans risque : attendre la fin du lancement, ou l'arrêter d'abord.
 - **Validation déjà acquise** : si le cas d'une story relancée est déjà approuvé et que la
   story n'a pas changé dans Jira, l'analyste ne vous redemande pas de validation.
 

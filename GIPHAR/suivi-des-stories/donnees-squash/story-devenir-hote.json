@@ -1,0 +1,26 @@
+{
+  "story_jira": "HVC-9",
+  "exigence": {
+    "nom": "HVC-9 - Devenir hôte",
+    "description": "En tant que propriétaire, je veux accéder à un parcours dédié « Devenir un hôte », afin de proposer mon propre logement à la location.\n\nCritères d'acceptation :\n- Le lien « Devenir un hôte » depuis la page d'accueil mène à une page dédiée.\n- Cette page présente le parcours ou le formulaire pour publier une annonce (contenu à valider en page suivante).\n\nPriorité : Moyenne (Should have).",
+    "criticite": "MAJOR"
+  },
+  "cas": {
+    "reference": "TC-HVC-9",
+    "nom": "TC-HVC-9 - Devenir hote",
+    "description": "Automatise par tests/tc-hvc-9-devenir-hote.spec.ts. Verifie l exigence HVC-9.",
+    "prerequis": "",
+    "importance": "MEDIUM",
+    "pas": [
+      {
+        "action": "Depuis la page d'accueil, cliquer sur le lien Devenir un hote.",
+        "resultat_attendu": "La page dediee Devenir un hote s'affiche (URL contenant become-a-host)."
+      },
+      {
+        "action": "Observer le contenu de la page.",
+        "resultat_attendu": "Le parcours ou le formulaire pour publier une annonce est presente (titre Become a Host visible)."
+      }
+    ]
+  },
+  "iteration_id": 1
+}

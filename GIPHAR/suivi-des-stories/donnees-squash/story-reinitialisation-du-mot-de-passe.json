@@ -1,0 +1,26 @@
+{
+  "story_jira": "HVC-8",
+  "exigence": {
+    "nom": "HVC-8 - Réinitialisation du mot de passe",
+    "description": "En tant qu'utilisateur ayant oublié son mot de passe, je veux demander une réinitialisation via mon email, afin de retrouver l'accès à mon compte.\n\nCritères d'acceptation :\n- Le lien « mot de passe oublié ? » ouvre un formulaire demandant l'email/identifiant.\n- La soumission déclenche l'envoi d'un email de réinitialisation (à vérifier côté back-end).\n\nPriorité : Moyenne (Should have).",
+    "criticite": "MAJOR"
+  },
+  "cas": {
+    "reference": "TC-HVC-8",
+    "nom": "TC-HVC-8 - Reinitialisation du mot de passe",
+    "description": "Automatise par tests/tc-hvc-8-mot-de-passe-oublie.spec.ts. Verifie l exigence HVC-8.",
+    "prerequis": "",
+    "importance": "MEDIUM",
+    "pas": [
+      {
+        "action": "Ouvrir la page d'accueil, cliquer sur Se connecter puis sur « mot de passe oublie ? ».",
+        "resultat_attendu": "Le formulaire de reinitialisation s affiche, demandant l email ou l identifiant."
+      },
+      {
+        "action": "Saisir un email et cliquer sur Soumettre.",
+        "resultat_attendu": "Un message confirme la soumission de la demande de reinitialisation."
+      }
+    ]
+  },
+  "iteration_id": 1
+}

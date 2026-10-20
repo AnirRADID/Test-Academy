@@ -3,7 +3,7 @@
   "name": "QA Homey - 4. Lister les stories",
   "nodes": [
     {
-      "id": "77083278-0af4-42bb-b3e6-93a6ea5d2bd9",
+      "id": "11be4019-c576-48b7-90a5-2f5921019b72",
       "name": "Note liste",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
@@ -15,11 +15,11 @@
         "color": 7,
         "width": 1300,
         "height": 200,
-        "content": "## QA Homey — 4. Lister les stories\nAppelé par la Tour de contrôle (http://localhost:5680) pour afficher les stories à tester : celles du **sprint actif** (`?portee=sprint`) ou de **tout le backlog** (`?portee=backlog`). Il ne fait que lire Jira, avec l'identifiant Jira de n8n.\n\nÀ publier une fois (bouton **Publish**), comme les autres flux. Vérifier que la boîte « Jira : chercher les stories » utilise bien l'identifiant **Jira SW Cloud API**."
+        "content": "## QA Homey — 4. Lister les stories\nAppelé par la Tour de contrôle (http://localhost:5680) pour afficher les stories à tester : celles du **sprint actif** (`?portee=sprint`) ou de **tout le backlog** (`?portee=backlog`), et les colonnes du tableau Jira (pour vérifier qu'elles correspondent à celles de la Tour). Il ne fait que lire Jira, avec l'identifiant Jira de n8n.\n\nÀ publier une fois (bouton **Publish**), comme les autres flux. Vérifier que la boîte « Jira : chercher les stories » utilise bien l'identifiant **Jira SW Cloud API**."
       }
     },
     {
-      "id": "e31b39da-2270-45e8-93d6-bb2c86a872db",
+      "id": "67ab6d7c-e975-473c-8f40-de2a843371d4",
       "name": "Liste demandée par la Tour",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -27,7 +27,7 @@
         0,
         100
       ],
-      "webhookId": "ba470799-8619-4f12-abdd-a9dc77655724",
+      "webhookId": "68983f98-f0cb-4b43-ae00-9332b3ba0e22",
       "parameters": {
         "httpMethod": "GET",
         "path": "qa-homey-lister-les-stories",
@@ -36,7 +36,7 @@
       }
     },
     {
-      "id": "3e17a799-6237-4c4f-858e-f0d4434f65b1",
+      "id": "5f24a070-362d-4d66-88ec-e097a103f0ea",
       "name": "Réglages",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -48,19 +48,19 @@
         "assignments": {
           "assignments": [
             {
-              "id": "97085db4-959f-4e28-b5fe-c4b4f61eed21",
+              "id": "d474f06f-ce12-4c82-b1bc-f3bc97c6f7d7",
               "name": "jiraSite",
               "value": "https://testacademy.atlassian.net",
               "type": "string"
             },
             {
-              "id": "29837466-eca6-41d1-8cc4-126adec330f8",
+              "id": "ecb78f6f-3576-41e1-a3ff-e80fd2c17e14",
               "name": "projetJira",
               "value": "HVC",
               "type": "string"
             },
             {
-              "id": "6dafb9ed-ea9e-472f-ac26-6f4d58b9f1a1",
+              "id": "d63c6b17-5cfa-4da3-82d9-51c48a5b9b51",
               "name": "portee",
               "value": "={{ $('Liste demandée par la Tour').first().json.query.portee === 'sprint' ? 'sprint' : 'backlog' }}",
               "type": "string"
@@ -71,7 +71,7 @@
       }
     },
     {
-      "id": "4f63f504-bdbd-47f4-9173-2d71ad07899b",
+      "id": "50e6a8bd-0722-40e0-9bf6-2e665d250a2f",
       "name": "Jira : chercher les stories",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -106,25 +106,70 @@
       }
     },
     {
-      "id": "ae91d3b2-2e63-46b1-bf2a-a43d78c1d4d1",
-      "name": "Mettre en forme",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "id": "d926c57f-c22a-4265-9cb1-d455b33e076f",
+      "name": "Jira : trouver le tableau",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         660,
         0
       ],
+      "onError": "continueRegularOutput",
       "parameters": {
-        "jsCode": "// Une ligne par story : cle, titre, statut Jira, etiquettes qa-*.\nconst issues = $input.first().json.issues || [];\nconst stories = issues.map(i => ({\n  cle: i.key,\n  titre: i.fields?.summary || '',\n  statut: i.fields?.status?.name || '',\n  etiquettes: (i.fields?.labels || []).filter(l => l.startsWith('qa-')),\n})).sort((a, b) => Number(a.cle.split('-').pop()) - Number(b.cle.split('-').pop()));\nreturn [{ json: { portee: $('Réglages').first().json.portee, stories } }];"
+        "method": "GET",
+        "url": "={{ $('Réglages').first().json.jiraSite }}/rest/agile/1.0/board",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "projectKeyOrId",
+              "value": "={{ $('Réglages').first().json.projetJira }}"
+            }
+          ]
+        },
+        "options": {}
       }
     },
     {
-      "id": "e28badea-25d4-4de0-a479-66b1a709c084",
+      "id": "397bead9-6b04-437f-a3b2-46da80abbdaf",
+      "name": "Jira : colonnes du tableau",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $('Réglages').first().json.jiraSite }}/rest/agile/1.0/board/{{ $json.values?.[0]?.id ?? 0 }}/configuration",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "options": {}
+      }
+    },
+    {
+      "id": "8bf0b2ba-6736-46d5-ac8d-9d0a4313febc",
+      "name": "Mettre en forme",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Une ligne par story : cle, titre, statut Jira, etiquettes qa-*. Plus les colonnes du\n// tableau Jira, dans l'ordre, pour que la Tour verifie qu'elles correspondent aux siennes.\nconst issues = $('Jira : chercher les stories').first().json.issues || [];\nconst colonnes = ($input.first().json.columnConfig?.columns || []).map(c => c.name);\nconst stories = issues.map(i => ({\n  cle: i.key,\n  titre: i.fields?.summary || '',\n  statut: i.fields?.status?.name || '',\n  etiquettes: (i.fields?.labels || []).filter(l => l.startsWith('qa-')),\n})).sort((a, b) => Number(a.cle.split('-').pop()) - Number(b.cle.split('-').pop()));\nreturn [{ json: { portee: $('Réglages').first().json.portee, stories, colonnes, tableau: $('Jira : trouver le tableau').first().json.values?.[0]?.name || null } }];"
+      }
+    },
+    {
+      "id": "b86bc221-2ed8-48df-ac1f-e5b89cadbd28",
       "name": "Répondre à la Tour",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        880,
+        1320,
         0
       ],
       "parameters": {
@@ -134,7 +179,7 @@
       }
     },
     {
-      "id": "46c8127e-b03a-4242-916d-2b55da35b0bd",
+      "id": "ac3a1263-55a1-4a31-9cca-d3077addb85b",
       "name": "Répondre : Jira en erreur",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
@@ -178,7 +223,7 @@
       "main": [
         [
           {
-            "node": "Mettre en forme",
+            "node": "Jira : trouver le tableau",
             "type": "main",
             "index": 0
           }
@@ -186,6 +231,28 @@
         [
           {
             "node": "Répondre : Jira en erreur",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : trouver le tableau": {
+      "main": [
+        [
+          {
+            "node": "Jira : colonnes du tableau",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jira : colonnes du tableau": {
+      "main": [
+        [
+          {
+            "node": "Mettre en forme",
             "type": "main",
             "index": 0
           }
