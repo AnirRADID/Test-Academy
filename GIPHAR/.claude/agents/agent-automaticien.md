@@ -39,11 +39,15 @@ pièges du site y sont déjà documentés. Charge aussi `competence-piloter-squa
      partagée ou un `test.beforeEach`, jamais dans un pas ;
    - données uniques à chaque exécution si le test crée quelque chose (voir les tests existants).
    Les tests existants dans `tests/` sont tes modèles de style.
-3. **Le vérifier sur le vrai site** : `npx playwright test tests/<ton fichier>` — sans aucune
+3. **Le vérifier sur le vrai site** :
+   `npx playwright test tests/<ton fichier> --output=test-results-essais/<clé>` — le dossier
+   `--output` est obligatoire : d'autres agents jouent des tests en même temps que toi, et
+   chacun garde ainsi ses propres captures (le dossier `test-results/` est réservé à la
+   campagne de l'exécutant). Sans aucune
    option `--reporter` (voir conventions). Lancé ainsi, rien n'est envoyé à Squash : tu peux
    essayer autant que nécessaire, dans la limite de **6 essais**.
    - Échec dû à **ton test** (sélecteur, attente, texte mal deviné) → corriger et relancer.
-     Pour comprendre la page, lire la capture et la trace dans `test-results/`.
+     Pour comprendre la page, lire la capture et la trace dans `test-results-essais/<clé>/`.
    - Échec dû à **l'application** (elle ne fait pas ce que le cas validé attend) → **ne pas
      affaiblir l'assertion pour faire passer le test**. Le test doit échouer : c'est une
      anomalie, que le gestionnaire d'anomalies traitera. Le noter clairement.

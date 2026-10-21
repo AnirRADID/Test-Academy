@@ -1,10 +1,11 @@
 /**
  * en-direct-reporter.ts — raconte a la Tour de controle ce que Playwright est en train de jouer.
  *
- * Ecrit suivi-des-stories/.execution-en-direct.json a chaque debut de test, de pas
- * (test.step) et de fin de test : la fenetre « Exécution » de la Tour le relit pour afficher
- * le test et le pas en cours, et capture l'ecran du navigateur par son port de debogage
- * (voir launchOptions dans playwright.config.ts : 9300 + numero du worker).
+ * Ecrit un fichier par execution dans suivi-des-stories/.executions/ (plusieurs agents peuvent
+ * jouer des tests en meme temps), a chaque debut de test, de pas (test.step) et de fin de
+ * test : la fenetre « navigateur en direct » de la Tour s'en sert pour savoir quels
+ * navigateurs sont ouverts et sur quel port de debogage (PW_PORT_BASE + numero du worker,
+ * voir launchOptions dans playwright.config.ts).
  *
  * N'envoie rien nulle part et ne change aucun resultat : il ne fait qu'ecrire ce fichier.
  */
@@ -12,15 +13,20 @@ import type { FullConfig, Reporter, Suite, TestCase, TestResult, TestStep, FullR
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 
-const FICHIER = process.env.EXECUTION_EN_DIRECT || join(process.cwd(), 'suivi-des-stories', '.execution-en-direct.json');
+const DOSSIER = process.env.EXECUTIONS_EN_DIRECT || join(process.cwd(), 'suivi-des-stories', '.executions');
+const FICHIER = join(DOSSIER, `${Date.now()}-${process.pid}.json`);
+const PORT_BASE = Number(process.env.PW_PORT_BASE ?? 9300);
 
-type EnCours = { test: string; fichier: string; pas: string | null; numeroPas: number; depuis: string };
+type EnCours = { test: string; fichier: string; pas: string | null; numeroPas: number; depuis: string; port: number };
 
 export default class EnDirectReporter implements Reporter {
   private etat = {
     enCours: true,
     // Une campagne (lancer-campagne.mjs fournit SQUASH_TOKEN) ou un essai de l'automaticien.
     origine: process.env.SQUASH_TOKEN ? 'campagne' : 'essai',
+    story: process.env.STORY_EN_COURS || null,
+    pid: process.pid,
+    portBase: PORT_BASE,
     debut: new Date().toISOString(),
     fin: null as string | null,
     total: 0, reussis: 0, echoues: 0,
@@ -43,7 +49,7 @@ export default class EnDirectReporter implements Reporter {
   onTestBegin(test: TestCase, result: TestResult) {
     this.etat.workers[result.parallelIndex] = {
       test: test.title, fichier: relative(process.cwd(), test.location.file).replace(/\\/g, '/'),
-      pas: null, numeroPas: 0, depuis: new Date().toISOString(),
+      pas: null, numeroPas: 0, depuis: new Date().toISOString(), port: PORT_BASE + result.parallelIndex,
     };
     this.ecrire();
   }

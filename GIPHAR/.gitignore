@@ -12,3 +12,8 @@ suivi-des-stories/.pause.json
 suivi-des-stories/.arret.json
 suivi-des-stories/lancements.json
 suivi-des-stories/.execution-en-direct.json
+suivi-des-stories/.executions/
+suivi-des-stories/.agents/
+suivi-des-stories/.agents.mutex
+suivi-des-stories/.reglages.json
+test-results-essais/

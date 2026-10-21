@@ -11,9 +11,10 @@ export default defineConfig({
     ['./reporters/en-direct-reporter.ts'],
   ],
   use: {
-    // Port de debogage du navigateur (9300 + numero du worker, sur ce PC seulement) : la Tour
-    // de controle s'en sert pour montrer l'ecran en direct. Ne change rien aux tests.
-    launchOptions: { args: [`--remote-debugging-port=${9300 + Number(process.env.TEST_PARALLEL_INDEX ?? 0)}`] },
+    // Port de debogage du navigateur, sur ce PC seulement : PW_PORT_BASE (fourni a chaque agent
+    // par n8n/outils/lancer-agent.mjs, 10 ports par agent, a partir de 9300) + numero du worker.
+    // La Tour de controle s'en sert pour montrer l'ecran en direct. Ne change rien aux tests.
+    launchOptions: { args: [`--remote-debugging-port=${Number(process.env.PW_PORT_BASE ?? 9300) + Number(process.env.TEST_PARALLEL_INDEX ?? 0)}`] },
     baseURL: 'http://livraison3.testacademy.fr',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

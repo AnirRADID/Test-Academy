@@ -293,6 +293,16 @@ button:disabled{opacity:.5;cursor:default}
 .col-head[data-voir-navigateur]{cursor:pointer}
 .col-head[data-voir-navigateur]:hover svg{transform:scale(1.08)}
 .col-head[data-voir-navigateur] svg{transition:transform .15s}
+.fx-etiquette{position:absolute;left:6px;top:6px;z-index:2;font-family:var(--mono);font-size:11px;color:#e6eaf1;background:#000a;border-radius:4px;padding:1px 6px}
+.fx-etiquette:empty{display:none}
+.fx-titre small{font-family:var(--body);font-weight:400;color:#99a4b4;font-size:12px}
+.reglage{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid var(--line);border-radius:10px;font-size:13px}
+.reglage-nom{color:var(--muted)}
+.reglage b{min-width:14px;text-align:center;font-variant-numeric:tabular-nums}
+.reglage small{color:var(--muted);font-size:11.5px}
+.fx-pas-btn{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-weight:700;line-height:1}
+.fx-pas-btn:hover:not(:disabled){border-color:var(--ana)}
+.pause-band.auto{background:var(--warn-bg);border-color:var(--warn)}
 .direct{font-size:11px;font-weight:700;color:var(--crit);display:inline-flex;align-items:center;gap:4px}
 </style>
 </head>
@@ -551,7 +561,7 @@ function renderKanban() {
     else {
       const a = E.agents.find(x => x.colonne === col.id);
       icon = robot(kind, { travail: 'on', bloque: 'ko', pause: 'zz' }[a.etat] || 'off'); who = col.titre;
-      st = { travail: 'au travail', bloque: 'bloqué', attente: 'attend son tour', pause: 'en pause', libre: 'libre' }[a.etat]; stCls = a.etat === 'travail' ? 'on' : a.etat === 'bloque' ? 'ko' : '';
+      st = { travail: a.auTravail > 1 ? `${a.auTravail} au travail` : 'au travail', bloque: 'bloqué', attente: 'attend son tour', pause: 'en pause', libre: 'libre' }[a.etat]; stCls = a.etat === 'travail' ? 'on' : a.etat === 'bloque' ? 'ko' : '';
     }
     const voir = kind === 'exe' ? ` data-voir-navigateur role="button" tabindex="0" title="Voir le navigateur en direct"` : '';
     const direct = kind === 'exe' && fx.enCours ? `<span class="direct"><i class="point-direct"></i>en direct</span>` : '';
@@ -571,14 +581,23 @@ function renderPilotage() {
   let etatTxt;
   if (!L) etatTxt = '<b>Tableau vide</b> · les robots attendent vos instructions';
   else etatTxt = `<b>${L.fini ? 'Tout est traité' : 'Travail en cours'}</b> · ${L.nb} stor${L.nb > 1 ? 'ies' : 'y'} sur le tableau · ${pl(L.termines, 'terminée')}${L.avecAnomalies ? ` (dont ${L.avecAnomalies} avec anomalies)` : ''}${L.n ? ` · dernier lancement n° ${L.n} à ${heure(L.debut)}` : ''}`;
-  const bandeau = E.pause ? `<div class="pause-band">💤 <b>En pause</b> depuis ${heure(E.pause.depuis)} : aucun robot ne démarre de nouvelle étape. Un robot déjà au travail finit la sienne.</div>` : '';
+  const bandeau = !E.pause ? '' : E.pause.jusqua
+    ? `<div class="pause-band auto">⏳ <b>Pause automatique</b> : la limite d'usage de votre abonnement Claude est atteinte. Les robots reprendront tout seuls à <b>${heure(E.pause.jusqua)}</b>, et l'étape interrompue sera rejouée.</div>`
+    : `<div class="pause-band">💤 <b>En pause</b> depuis ${heure(E.pause.depuis)} : aucun robot ne démarre de nouvelle étape. Un robot déjà au travail finit la sienne.</div>`;
+  const n = E.reglages?.agentsEnParallele ?? 5;
+  const reglage = `<span class="reglage" title="Nombre maximum d'agents qui travaillent en même temps (la campagne de tests reste à un seul agent à la fois)">
+    <span class="reglage-nom">Agents en parallèle</span>
+    <button class="fx-pas-btn" data-agents="${n - 1}" ${n <= 1 ? 'disabled' : ''} aria-label="Un agent de moins">−</button>
+    <b>${n}</b>
+    <button class="fx-pas-btn" data-agents="${n + 1}" ${n >= 5 ? 'disabled' : ''} aria-label="Un agent de plus">+</button>
+    <small>${E.agentsAuTravail} au travail</small></span>`;
   const pause = E.pause ? `<button class="btn btn-good" data-reprendre>▶ Reprendre</button>`
     : `<button class="btn btn-ghost" data-pause ${enCours ? '' : 'disabled title="Rien en cours"'}>⏸ Pause</button>`;
   const arret = !surTableau ? '' : confirmerArret
     ? `<span class="confirm">Tout arrêter et remettre à zéro ? Le tableau sera vidé et, dans Jira, ses stories reviendront dans « À faire ». <button class="btn btn-crit small" data-arreter-oui>Oui, tout remettre à zéro</button> <button class="btn btn-ghost small" data-arreter-non>Annuler</button></span>`
     : `<button class="btn btn-crit" data-arreter title="Arrêter définitivement et tout remettre à zéro">⏹ Arrêter</button>`;
   const lancer = `<button class="btn btn-primary" data-ouvrir-lancement>${surTableau ? '＋ Lancer d’autres tests' : '▶ Lancer des tests'}</button>`;
-  zone('pilotage', `<div class="pilotage"><div class="etat-lancement">${etatTxt}</div><div class="actions">${pause}${arret}${lancer}</div></div>${bandeau}`);
+  zone('pilotage', `<div class="pilotage"><div class="etat-lancement">${etatTxt}</div><div class="actions">${reglage}${pause}${arret}${lancer}</div></div>${bandeau}`);
 }
 function renderHistorique() {
   zone('historique', E.historique.length ? `<details class="histo"><summary>Historique des lancements (${E.historique.length})</summary><ul>${E.historique.map(l =>
@@ -792,6 +811,8 @@ document.addEventListener('click', (e) => {
   if (rl) { rl.disabled = true; return piloter('/lancer', j => `${rl.dataset.relancer} relancée (lancement n° ${j.n})`,
     { portee: 'choix', cles: [rl.dataset.relancer], titres: { [rl.dataset.relancer]: rl.dataset.titre } }); }
   if (e.target.closest('[data-ouvrir-lancement]')) return ouvrirLancement();
+  const ag = e.target.closest('[data-agents]');
+  if (ag) return piloter('/reglages', j => `Agents en parallèle : ${j.agentsEnParallele}`, { agentsEnParallele: Number(ag.dataset.agents) });
   if (e.target.closest('[data-voir-navigateur]')) return fxTaille(fx.taille === 'agrandie' ? 'agrandie' : 'normale');
   const b = e.target.closest('[data-fx]');
   if (b) return fxTaille({ fermer: 'fermee', reduire: fx.taille === 'reduite' ? fx.avant : 'reduite',
@@ -819,49 +840,49 @@ try { if (localStorage.getItem('tour-onglet') === 'c') choisirOnglet('c'); } cat
    Montre le navigateur piloté par Playwright, en mouvement (flux vidéo /execution/flux).
    Quatre états : fermée, réduite, normale, agrandie. S'ouvre d'un clic sur le robot de la
    colonne Exécutant, et toute seule quand le robot Exécutant lance une campagne. */
-const fx = { taille: 'fermee', avant: 'normale', enCours: false, execution: null, fermeePour: null, ecrans: ['0'] };
+const fx = { taille: 'fermee', avant: 'normale', enCours: false, vague: null, fermeePour: null, ecrans: [] };
 function fxTaille(taille) {
-  if (taille === 'fermee') fx.fermeePour = fx.execution;   // pas de réouverture automatique pour cette exécution
+  if (taille === 'fermee') fx.fermeePour = fx.vague;   // pas de réouverture automatique pour ces exécutions
   if (taille !== 'reduite' && taille !== 'fermee') fx.avant = taille;
   fx.taille = taille;
   $('fenetre-exe').dataset.taille = taille;
   $('fenetre-exe').querySelector('[data-fx="agrandir"]').title = taille === 'agrandie' ? 'Rétablir' : 'Agrandir';
   dessinerEcrans();
 }
+// Un écran par navigateur ouvert (plusieurs agents peuvent jouer des tests en même temps).
 // Les flux ne sont branchés que si la fenêtre montre les écrans : fermée ou réduite, on les coupe
 // (recréer les balises <img> sans adresse interrompt le téléchargement).
 function dessinerEcrans() {
   const visible = fx.taille === 'normale' || fx.taille === 'agrandie';
   const corps = $('fx-corps');
-  corps.style.setProperty('--colonnes', fx.ecrans.length > 1 ? 2 : 1);
-  corps.innerHTML = fx.ecrans.map(w => `<div class="fx-ecran"><img data-w="${esc(w)}" alt="Navigateur piloté par le test"><div class="fx-attente">${robot('exe', fx.enCours ? 'on' : 'zz')}<span>${fx.enCours ? 'Ouverture du navigateur…' : 'Le navigateur apparaîtra ici dès que les tests démarrent'}</span></div></div>`).join('');
-  corps.querySelectorAll('img').forEach(img => {
-    if (visible) img.src = `/execution/flux?w=${encodeURIComponent(img.dataset.w)}&t=${Date.now()}`;
-  });
+  const ecrans = fx.ecrans.length ? fx.ecrans : [null];
+  corps.style.setProperty('--colonnes', ecrans.length > 1 ? 2 : 1);
+  corps.innerHTML = ecrans.map(e => `<div class="fx-ecran">${e ? `<img data-port="${e.port}" alt="Navigateur piloté par le test">
+      <span class="fx-etiquette">${esc(e.story || '')}${e.origine === 'campagne' ? ' · campagne' : e.origine === 'essai' ? ' · essai' : ''}</span>` : ''}
+    <div class="fx-attente">${robot('exe', fx.enCours ? 'on' : 'zz')}<span>${fx.enCours ? 'Ouverture du navigateur…' : 'Le navigateur apparaîtra ici dès que les tests démarrent'}</span></div></div>`).join('');
+  if (visible) corps.querySelectorAll('img').forEach(img => { img.src = `/execution/flux?port=${img.dataset.port}&t=${Date.now()}`; });
   majTitre();
 }
 function majTitre() {
-  $('fx-titre').innerHTML = `${robot('exe', fx.enCours ? 'on' : 'off')}Navigateur en direct${fx.enCours ? ' <i class="point-direct"></i>' : ''}`;
+  const n = fx.ecrans.length;
+  $('fx-titre').innerHTML = `${robot('exe', fx.enCours ? 'on' : 'off')}Navigateur en direct${fx.enCours ? ` <i class="point-direct"></i>${n > 1 ? ` <small>${n} navigateurs</small>` : ''}` : ''}`;
 }
 async function majExecution() {
   let x;
   try { x = await (await fetch('/execution', { cache: 'no-store' })).json(); } catch { return; }
-  const avant = fx.enCours, ancienne = fx.execution;
+  const avant = fx.enCours;
   fx.enCours = !!x.enCours;
-  if (x.enCours) fx.execution = x.debut;
-  // Un écran par navigateur (worker Playwright) apparu pendant cette exécution.
-  const actifs = x.enCours ? Object.keys(x.workers || {}) : [];
-  const ecrans = fx.execution !== ancienne ? (actifs.length ? actifs : ["0"]) : [...new Set([...fx.ecrans, ...actifs])];
-  ecrans.sort((a, b) => a - b);
-  // On rebranche les écrans quand une exécution démarre ou qu'un navigateur apparaît ; à la
-  // fin, on garde la dernière image affichée.
-  const change = ecrans.join() !== fx.ecrans.join() || (!avant && fx.enCours);
-  fx.ecrans = ecrans;
+  if (x.enCours) fx.vague = x.debut;
+  // Les écrans : ceux des navigateurs ouverts ; à la fin des exécutions, on garde les derniers
+  // affichés (leur dernière image reste visible).
+  const ports = x.ecrans.map(e => e.port).sort((a, b) => a - b);
+  const change = x.enCours && ports.join() !== fx.ecrans.map(e => e.port).join();
+  if (x.enCours) fx.ecrans = [...x.ecrans].sort((a, b) => a.port - b.port);
   if (avant !== fx.enCours && E) renderKanban();
   // Le robot Exécutant lance une campagne : la fenêtre s'ouvre toute seule (sauf si vous
-  // l'avez fermée pendant cette même campagne).
-  if (x.enCours && x.origine === 'campagne' && fx.taille === 'fermee' && fx.fermeePour !== x.debut) return fxTaille('normale');
-  if (change && fx.taille !== 'fermee') dessinerEcrans(); else majTitre();
+  // l'avez fermée pendant ces mêmes exécutions).
+  if (x.campagne && fx.taille === 'fermee' && fx.fermeePour !== x.debut) return fxTaille('normale');
+  if ((change || (!avant && fx.enCours)) && fx.taille !== 'fermee') dessinerEcrans(); else majTitre();
 }
 setInterval(majExecution, 1500);
 

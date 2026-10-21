@@ -254,8 +254,18 @@ est d'abord montrée pour confirmation. Ensuite, demandez simplement « où en e
 Claude lit le journal et la fiche de suivi, et vous donne le lien de validation quand c'est
 votre tour.
 
-Les stories avancent **en parallèle**, mais les agents travaillent **un par un** : un agent
-qui arrive pendant qu'un autre travaille attend son tour (le journal l'indique).
+Les stories avancent **en parallèle**, et **plusieurs agents travaillent en même temps** :
+jusqu'à 5, nombre réglable dans la barre du haut de la Tour (« Agents en parallèle »). Deux
+choses restent à un seul agent à la fois : la **campagne de tests** (l'Exécutant, puis le
+Gestionnaire qui trie ses échecs) et la **publication du bilan** dans Squash (le Rapporteur).
+Un agent qui ne trouve pas de place attend son tour (le journal l'indique). Les essais de
+l'Automaticien vont dans `test-results-essais/<story>/`, ceux de la campagne dans
+`test-results/` : personne n'efface les captures d'un autre.
+
+**Limite d'usage Claude** : si votre abonnement Claude atteint sa limite, la Tour se met
+**en pause automatique** jusqu'à l'heure de remise à zéro annoncée par Claude (bandeau
+orange), puis les agents repartent seuls et l'étape interrompue est rejouée. Aucune story
+n'est bloquée pour autant. **▶ Reprendre** lève la pause plus tôt si vous le souhaitez.
 
 ### Le journal des tâches : tout ce qui se passe, en direct
 

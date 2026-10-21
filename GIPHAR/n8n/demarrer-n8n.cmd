@@ -8,8 +8,9 @@ rem La boite "Execute Command" (qui lance les agents) est desactivee par defaut
 rem dans n8n, par securite. Cette ligne la reactive.
 set NODES_EXCLUDE=[]
 
-rem Une seule execution a la fois. (En plus, n8n/outils/lancer-agent.mjs ne laisse
-rem travailler qu un agent a la fois : les autres attendent leur tour.)
+rem Une seule demande de lancement traitee a la fois (les cycles des stories, eux, avancent
+rem en parallele). n8n/outils/lancer-agent.mjs limite le nombre d'agents au travail en meme
+rem temps (reglage « Agents en parallele » de la Tour de controle).
 set N8N_CONCURRENCY_PRODUCTION_LIMIT=1
 
 rem n8n n'ecoute que ce PC : personne d'autre sur le reseau ne peut lui envoyer

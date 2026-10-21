@@ -8,7 +8,8 @@
  * les agents ecrivent deja, plus les resultats Squash :
  *   - suivi-des-stories/journal-des-taches.md   (chaque action, toutes stories confondues)
  *   - suivi-des-stories/story-*.md              (la fiche de suivi de chaque story)
- *   - suivi-des-stories/.agent-en-cours.json    (le verrou : quel agent travaille en ce moment)
+ *   - suivi-des-stories/.agents/<pid>.json      (une place par agent au travail, en parallele)
+ *   - suivi-des-stories/.executions/*.json      (les executions Playwright en cours)
  *   - Squash : le plan de l'iteration et le resultat de chaque cas (relu toutes les minutes)
  * Il n'AGIT que sur votre demande, depuis la page :
  *   - lancer des stories (envoyees au flux n8n « 1. Lancer des stories ») ; chaque lancement
@@ -32,6 +33,7 @@
  *   /execution/ecran?w=0  capture JPEG du navigateur pilote par le worker 0
  *   POST /lancer      { portee: "choix"|"sprint"|"backlog", cles: ["HVC-6", …] }
  *   POST /pause, POST /reprendre, POST /arreter
+ *   POST /reglages    { agentsEnParallele: 1..5 }
  *   POST /valider     { cle, decision: "Approuver"|"Refuser", remarques }
  *   POST /analyse     demande une nouvelle analyse a Claude (la reponse arrive dans /etat)
  *
@@ -49,13 +51,14 @@ const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = resolve(ICI, '..');
 const SUIVI = process.env.SUIVI_DES_STORIES || join(RACINE, 'suivi-des-stories'); // autre dossier : pour les essais
 const JOURNAL = process.env.JOURNAL_DES_TACHES || join(SUIVI, 'journal-des-taches.md');
-const VERROU = process.env.VERROU_AGENT || join(SUIVI, '.agent-en-cours.json');
+const PLACES = process.env.AGENTS_AU_TRAVAIL || join(SUIVI, '.agents');
+const REGLAGES = join(SUIVI, '.reglages.json');
 const ANALYSE = join(ICI, '.analyse-claude.json');
 const PAUSE = join(SUIVI, '.pause.json');
 const ARRET = join(SUIVI, '.arret.json');
 const LANCEMENTS = join(SUIVI, 'lancements.json');
 const N8N = process.env.N8N_URL || 'http://127.0.0.1:5678';
-const EXECUTION = process.env.EXECUTION_EN_DIRECT || join(SUIVI, '.execution-en-direct.json');
+const EXECUTIONS = process.env.EXECUTIONS_EN_DIRECT || join(SUIVI, '.executions');
 const SQUASH_MJS = join(RACINE, '.claude', 'skills', 'competence-piloter-squash', 'squash.mjs');
 const PORT = Number(process.env.SUPERVISION_PORT || 5680);
 const JIRA = 'https://testacademy.atlassian.net';
@@ -147,14 +150,32 @@ function lireFiches() {
   return fiches;
 }
 
-function lireVerrou() {
-  try {
-    const v = JSON.parse(lire(VERROU));
-    process.kill(v.pid, 0); // le verrou d'un agent arrete brutalement ne compte pas
-    return v;
-  } catch (e) {
-    return e?.code === 'EPERM' ? JSON.parse(lire(VERROU)) : null;
-  }
+// Les agents au travail : une place par agent (n8n/outils/lancer-agent.mjs). Une place dont le
+// processus n'existe plus ne compte pas (agent arrete brutalement).
+function lirePlaces() {
+  if (!existsSync(PLACES)) return [];
+  return readdirSync(PLACES).filter(f => f.endsWith('.json')).map((f) => {
+    try {
+      const p = JSON.parse(lire(join(PLACES, f)));
+      try { process.kill(p.pid, 0); } catch (e) { if (e.code !== 'EPERM') return null; }
+      return p;
+    } catch { return null; }
+  }).filter(Boolean);
+}
+
+// Reglages modifiables depuis la Tour : le nombre d'agents qui travaillent en parallele (1 a 5).
+const lireReglages = () => {
+  let r = {};
+  try { r = JSON.parse(lire(REGLAGES)) || {}; } catch { /* reglages par defaut */ }
+  return { agentsEnParallele: Math.min(5, Math.max(1, Math.round(Number(r.agentsEnParallele)) || 5)) };
+};
+function regler({ agentsEnParallele }) {
+  const n = Math.round(Number(agentsEnParallele));
+  if (!(n >= 1 && n <= 5)) throw new Error('Choisissez entre 1 et 5 agents en parallèle.');
+  const avant = lireReglages().agentsEnParallele;
+  writeFileSync(REGLAGES, JSON.stringify({ ...lireReglages(), agentsEnParallele: n }));
+  if (n !== avant) noterAuJournal(`⚙ agents en parallèle : ${avant} → ${n}`);
+  return lireReglages();
 }
 
 /* ------------------------------------------------------ Squash (toutes les minutes) */
@@ -264,7 +285,8 @@ function lancementCourant(evenements) {
 function etat() {
   const evenements = lireJournal();
   const fiches = lireFiches();
-  const verrou = lireVerrou();
+  const places = lirePlaces();
+  const placeDe = (cle) => places.find(p => p.cle === cle || p.story?.includes(`(${cle})`));
   const sq = resultatsSquash.valeur;
   const lancement = lancementCourant(evenements);
   const pause = existsSync(PAUSE) ? JSON.parse(lire(PAUSE) || '{}') : null;
@@ -329,10 +351,11 @@ function etat() {
     else s.colonne ??= 'a-faire';
     // Le resultat Squash ne compte pour le Kanban que s'il date du tableau en cours.
     s.resultatDuLancement = s.dansLancement && s.resultat && (!lancement.debutTableau || (s.joueLe && s.joueLe >= lancement.debutTableau)) ? s.resultat : null;
-    const enTravail = s.dansLancement && verrou && verrou.story?.includes(`(${s.cle})`);
-    s.travail = enTravail ? { agent: verrou.agent, depuis: verrou.depuis } : null;
+    const place = s.dansLancement ? placeDe(s.cle) : null;
+    const enTravail = !!place;
+    s.travail = place ? { agent: place.agent, depuis: place.depuis } : null;
     if (enTravail) {
-      const action = [...evenements].reverse().find(e => e.cle === s.cle && e.qui === verrou.agent && !/^démarre$|attend son tour|^⏸|^▶ reprise/.test(e.quoi));
+      const action = [...evenements].reverse().find(e => e.cle === s.cle && e.qui === place.agent && !/^démarre$|^redémarre|attend son tour|^⏸|^▶ reprise/.test(e.quoi));
       s.travail.action = action?.quoi || 'démarre';
     }
     s.attendSonTour = s.dansLancement && !enTravail && !s.bloque && !s.arretee && !s.fini
@@ -352,10 +375,10 @@ function etat() {
   const agents = AGENTS.map((a) => {
     const colonne = colonneDeLAgent[a.nom];
     const ici = duLancement.filter(s => s.colonne === colonne && !s.arretee && !s.fini);
-    const travail = verrou?.agent === a.nom;
-    const bloque = !travail && ici.some(s => s.bloque);
-    const etat = travail ? 'travail' : bloque ? 'bloque' : pause && ici.length ? 'pause' : ici.length ? 'attente' : 'libre';
-    return { ...a, colonne, etat };
+    const auTravail = places.filter(p => p.agent === a.nom).length;
+    const bloque = !auTravail && ici.some(s => s.bloque);
+    const etat = auTravail ? 'travail' : bloque ? 'bloque' : pause && ici.length ? 'pause' : ici.length ? 'attente' : 'libre';
+    return { ...a, colonne, etat, auTravail };
   });
 
   // --- le lancement en cours et les precedents ------------------------------------------
@@ -402,6 +425,8 @@ function etat() {
     lancement: resume,
     historique,
     pause,
+    reglages: lireReglages(),
+    agentsAuTravail: places.length,
     stories: listeStories,
     bugs: Object.values(bugs),
     qualite,
@@ -596,13 +621,40 @@ function historiqueDe(cle) {
 /* ------------------------------------------- l'execution Playwright, en direct */
 // reporters/en-direct-reporter.ts ecrit l'etat de l'execution ; l'ecran se capture par le port
 // de debogage du navigateur (9300 + numero du worker, cf. playwright.config.ts).
-function lireExecution() {
-  try {
-    const e = JSON.parse(lire(EXECUTION));
-    // Une execution « en cours » sans nouvelle depuis 20 minutes a ete interrompue.
-    if (e.enCours && Date.now() - statSync(EXECUTION).mtimeMs > 20 * 60000) { e.enCours = false; e.interrompue = true; e.workers = {}; }
-    return e;
-  } catch { return null; }
+// Toutes les executions Playwright : une par fichier (un par lancement de Playwright, donc
+// plusieurs si plusieurs agents jouent des tests en meme temps). Une execution « en cours »
+// sans nouvelle depuis 20 minutes a ete interrompue ; les fichiers de plus d'un jour sont
+// supprimes.
+function lireExecutions() {
+  if (!existsSync(EXECUTIONS)) return [];
+  const sortie = [];
+  for (const f of readdirSync(EXECUTIONS).filter(n => n.endsWith('.json'))) {
+    const chemin = join(EXECUTIONS, f);
+    try {
+      const age = Date.now() - statSync(chemin).mtimeMs;
+      if (age > 24 * 3600000) { unlinkSync(chemin); continue; }
+      const e = JSON.parse(lire(chemin));
+      if (e.enCours && age > 20 * 60000) { e.enCours = false; e.interrompue = true; e.workers = {}; }
+      sortie.push(e);
+    } catch { /* fichier en cours d'ecriture */ }
+  }
+  return sortie.sort((a, b) => String(a.debut).localeCompare(String(b.debut)));
+}
+// Ce que montre la fenetre « navigateur en direct » : un ecran par navigateur ouvert.
+function etatExecution() {
+  const toutes = lireExecutions(), actives = toutes.filter(e => e.enCours);
+  const ecrans = actives.flatMap(e => Object.values(e.workers || {}).map(w => ({
+    port: w.port ?? (e.portBase ?? 9300), story: e.story, origine: e.origine, test: w.test, pas: w.pas,
+  })));
+  const derniere = toutes.at(-1);
+  return {
+    enCours: actives.length > 0,
+    campagne: actives.some(e => e.origine === 'campagne'),
+    // Identifiant de la « vague » d'executions en cours : change quand une nouvelle commence.
+    debut: actives.map(e => e.debut).sort().at(-1) || null,
+    ecrans,
+    derniere: derniere ? { fin: derniere.fin, reussis: derniere.reussis, echoues: derniere.echoues, origine: derniere.origine, story: derniere.story } : null,
+  };
 }
 // Le navigateur en mouvement : flux video MJPEG (une image JPEG par changement d'ecran), que
 // la page affiche dans une simple balise <img>. Chrome envoie les images lui-meme
@@ -613,9 +665,9 @@ const pageActive = (pages) => {
   const p = pages.filter(x => x.type === 'page');
   return p.find(x => x.url && x.url !== 'about:blank') || p[0] || null;
 };
-function diffuserEcran(indice, req, res) {
-  const port = 9300 + Number(indice);
-  if (!Number.isInteger(port) || port < 9300 || port > 9363) return json(res, 404, { erreur: 'écran inconnu' });
+function diffuserEcran(port, req, res) {
+  port = Number(port);
+  if (!Number.isInteger(port) || port < 9300 || port > 9399) return json(res, 404, { erreur: 'écran inconnu' });
   res.writeHead(200, { 'Content-Type': 'multipart/x-mixed-replace; boundary=cadre', 'Cache-Control': 'no-store', Connection: 'close' });
   let fini = false, ws = null, cibleId = null;
   const fermer = () => { try { ws?.close(); } catch { /* deja ferme */ } };
@@ -756,6 +808,7 @@ const serveur = http.createServer(async (req, res) => {
         if (url.pathname === '/pause') { mettreEnPause(); return json(res, 200, { ok: true }); }
         if (url.pathname === '/reprendre') { reprendre(); return json(res, 200, { ok: true }); }
         if (url.pathname === '/arreter') return json(res, 200, await arreter());
+        if (url.pathname === '/reglages') return json(res, 200, regler(corps));
       } catch (e) { return json(res, 400, { erreur: e.message }); }
       return json(res, 404, { erreur: 'Introuvable' });
     }
@@ -771,8 +824,8 @@ const serveur = http.createServer(async (req, res) => {
                : repondre(res, 404, 'text/plain', 'Pas encore de fiche de suivi pour cette story.');
     }
     if (url.pathname === '/historique') return json(res, 200, historiqueDe(url.searchParams.get('cle')));
-    if (url.pathname === '/execution') return json(res, 200, lireExecution() || { enCours: false, jamais: true });
-    if (url.pathname === '/execution/flux') return diffuserEcran(url.searchParams.get('w') || 0, req, res);
+    if (url.pathname === '/execution') return json(res, 200, etatExecution());
+    if (url.pathname === '/execution/flux') return diffuserEcran(url.searchParams.get('port') ?? 9300 + Number(url.searchParams.get('w') || 0), req, res);
     if (url.pathname === '/execution/ecran') {
       try {
         const c = await capturerEcran(url.searchParams.get('w') || 0);
