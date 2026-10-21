@@ -248,6 +248,9 @@ button:disabled{opacity:.5;cursor:default}
 .choix-stories .der{font-size:12px;color:var(--muted);white-space:nowrap}
 .choix-stories .der.good{color:var(--good)} .choix-stories .der.crit{color:var(--crit)}
 .estimation{font-size:13px;color:var(--muted)}
+.cas-bloc{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.cas-bloc h4{margin:0;font-family:var(--display);font-size:14px;display:flex;gap:8px;align-items:baseline}
+.cas-bloc h4 .key{font-family:var(--mono);font-size:12px;color:var(--ana)}
 .question{margin:0 0 8px;font-family:var(--display);font-weight:700;font-size:16px}
 .portees{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px}
 .portee{align-items:flex-start}
@@ -521,7 +524,11 @@ function carte(s, kind) {
   if (s.colonne === 'a-valider' && !s.arretee) h += decisionsEnvoyees.has(s.cle) ? `<span class="chip wait">✔ décision envoyée</span>`
     : `${s.attenteDepuis ? `<span class="meta">depuis ${esc(s.attenteDepuis)}</span>` : ''}<button class="btn btn-hum" data-review="${esc(s.cle)}">Examiner</button>`;
   if (s.fini && s.colonne === 'anomalies') h += `<span class="chip crit">🐞 terminé avec anomalies</span>`;
-  else if (s.resultatDuLancement && ['anomalies', 'rapporteur', 'termine'].includes(s.colonne)) h += s.resultatDuLancement === 'reussi' ? `<span class="chip good">✓ test réussi</span>` : `<span class="chip crit">✗ test échoué</span>`;
+  else if (s.resultatDuLancement && ['anomalies', 'rapporteur', 'termine'].includes(s.colonne)) {
+    const n = s.cas?.length || 1, ok = s.casReussis ?? (s.resultatDuLancement === 'reussi' ? 1 : 0);
+    h += n > 1 ? `<span class="chip ${ok === n ? 'good' : 'crit'}">${ok === n ? '✓' : '✗'} ${ok}/${n} cas réussis</span>`
+      : s.resultatDuLancement === 'reussi' ? `<span class="chip good">✓ test réussi</span>` : `<span class="chip crit">✗ test échoué</span>`;
+  }
   if (s.bugs?.length && ['anomalies', 'rapporteur', 'termine'].includes(s.colonne))
     h += `<div class="bugs-carte">${s.bugs.map(b => `<a class="bug-chip" href="${esc(b.lien)}" target="_blank" rel="noopener" title="${esc(b.titre)}">🐞 ${esc(b.cle)}<small>${b.nouveau ? 'nouveau' : 'déjà connu'}</small></a>`).join('')}</div>`;
   if ((s.fini || s.bloque || s.arretee) && !s.travail) h += `<button class="btn btn-ghost small relancer" data-relancer="${esc(s.cle)}" data-titre="${esc(s.titre)}" title="Relancer le cycle de test de cette story">↻ Relancer</button>`;
@@ -667,16 +674,17 @@ function renderResultats() {
   const q = E.qualite;
   zone('res-titre', `Squash · ${esc(E.squash.iteration.nom || `itération ${E.squash.iteration.id}`)}${E.squash.relu ? ` · relu à ${heure(E.squash.relu)}` : ''}`);
   if (!q.stories) return zone('results', `<p class="vide">Aucune story suivie pour l'instant.</p>`);
-  const parts = [['Réussis', q.reussis, '--good'], ['Échoués', q.echoues, '--crit'], ['Pas encore testés', q.nonJoues, '--none']];
+  const parts = [['Réussies', q.storiesReussies, '--good'], ['Échouées', q.storiesEchouees, '--crit'], ['Pas encore testées', q.nonJoues, '--none']];
   const R = 70, C = 2 * Math.PI * R, gap = parts.filter(p => p[1]).length > 1 ? 3 : 0; let off = 0;
   const arcs = parts.filter(p => p[1]).map(([lab, v, c]) => { const len = v / q.stories * C;
     const el = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="var(${c})" stroke-width="22" stroke-dasharray="${Math.max(len - gap, 0)} ${C}" stroke-dashoffset="${-off}" transform="rotate(-90 100 100)"><title>${lab} : ${v}</title></circle>`; off += len; return el; }).join('');
   const tuiles = E.stories.map(s => { const cls = s.resultat === 'reussi' ? 'good' : s.resultat === 'echoue' ? 'crit' : '';
-    const ic = cls === 'good' ? '✓' : cls === 'crit' ? '✗' : '○', lab = cls === 'good' ? 'réussi' : cls === 'crit' ? 'échoué' : 'pas encore testé';
+    const ic = cls === 'good' ? '✓' : cls === 'crit' ? '✗' : '○', lab = (cls === 'good' ? 'réussie' : cls === 'crit' ? 'échouée' : 'pas encore testée')
+      + (s.cas?.length > 1 ? ` (${s.casReussis}/${s.cas.length} cas réussis : ${s.cas.map(c => `${c.reference} ${c.resultat === 'reussi' ? '✓' : c.resultat === 'echoue' ? '✗' : '○'}`).join(', ')})` : '');
     return `<div class="tile ${cls}" title="${esc(s.cle)} · ${esc(s.titre)} : ${lab}${s.joueLe ? ` (joué le ${dateHeure(s.joueLe)})` : ''}"><b>${ic} ${esc(s.cle)}</b><span class="t">${esc(s.titre)}</span></div>`; }).join('');
   const sansBug = E.stories.filter(s => s.colonne === 'anomalies' && s.resultat === 'echoue');
-  zone('results', `<div class="res"><div class="donut"><svg viewBox="0 0 200 200" role="img" aria-label="${q.reussis} réussis, ${q.echoues} échoués, ${q.nonJoues} pas encore testés">${arcs}
-      <text x="100" y="98" text-anchor="middle" font-family="Chakra Petch,sans-serif" font-weight="700" font-size="30" fill="var(--fg)">${q.joues}/${q.stories}</text>
+  zone('results', `<div class="res"><div class="donut"><svg viewBox="0 0 200 200" role="img" aria-label="${q.storiesReussies} stories réussies, ${q.storiesEchouees} échouées, ${q.nonJoues} pas encore testées">${arcs}
+      <text x="100" y="98" text-anchor="middle" font-family="Chakra Petch,sans-serif" font-weight="700" font-size="30" fill="var(--fg)">${q.stories - q.nonJoues}/${q.stories}</text>
       <text x="100" y="120" text-anchor="middle" font-size="12" fill="var(--muted)">stories testées</text></svg>
       <div class="legend">${parts.map(([l, v, c]) => `<span><i style="background:var(${c})"></i>${l} · <b>${v}</b></span>`).join('')}</div></div>
     <div><p class="strip-title">Une case par story suivie</p><div class="tiles">${tuiles}</div>
@@ -722,10 +730,13 @@ async function ouvrirValidation(cle) {
   try {
     const r = await fetch(`/cas?cle=${encodeURIComponent(cle)}`), c = await r.json();
     if (!r.ok) throw new Error(c.erreur);
-    $('d-title').textContent = c.nom;
-    $('d-body').innerHTML = `${c.description ? `<p class="desc">${esc(c.description)}</p>` : ''}<table class="steps"><thead><tr><th>#</th><th>Action</th><th>Résultat attendu</th></tr></thead><tbody>
-      ${c.pas.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.action)}</td><td>${esc(p.attendu)}</td></tr>`).join('')}</tbody></table>
-      ${s.fiche ? `<button class="btn btn-ghost small" data-fiche="${esc(cle)}">Lire la fiche de suivi (points à surveiller)</button>` : ''}`;
+    const lesCas = c.cas || [c];
+    $('d-title').textContent = lesCas.length > 1 ? `${lesCas.length} cas de test · ${s.titre}` : lesCas[0].nom;
+    $('d-body').innerHTML = (lesCas.length > 1 ? `<p class="desc">Un cas par critère d'acceptation. Vous validez l'ensemble ; pour refuser, précisez dans vos remarques quel cas corriger (par exemple « TC-HVC-9-2 : … »).</p>` : '')
+      + lesCas.map(x => `<section class="cas-bloc">${lesCas.length > 1 ? `<h4><span class="key">${esc(x.reference)}</span> ${esc(x.nom)}</h4>` : ''}
+        ${x.description ? `<p class="desc">${esc(x.description)}</p>` : ''}<table class="steps"><thead><tr><th>#</th><th>Action</th><th>Résultat attendu</th></tr></thead><tbody>
+        ${x.pas.map((p, i) => `<tr><td>${i + 1}</td><td>${esc(p.action)}</td><td>${esc(p.attendu)}</td></tr>`).join('')}</tbody></table></section>`).join('')
+      + `${s.fiche ? `<button class="btn btn-ghost small" data-fiche="${esc(cle)}">Lire la fiche de suivi (points à surveiller)</button>` : ''}`;
   } catch (e) {
     $('d-body').innerHTML = `<p class="err-box">Impossible de lire le cas dans Squash : ${esc(e.message)}. Vous pouvez le relire directement dans Squash avant de décider.</p>`;
   }

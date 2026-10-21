@@ -38,33 +38,47 @@ node .claude/skills/competence-piloter-squash/squash.mjs lire-bilans <iteration_
 node .claude/skills/competence-piloter-squash/squash.mjs bilan-iteration <iteration_id> <fichier.html>
 ```
 
+**Plusieurs cas par story.** Une story a **un cas de test par critère d'acceptation** :
+`TC-HVC-9-1`, `TC-HVC-9-2`… La référence **`TC-HVC-9`** désigne le **groupe** de tous les cas
+de la story : `lire-cas`, `statut`, `ajouter-au-plan`, `tag` et `detag` s'appliquent alors à
+chacun d'eux. `TC-HVC-9-2` désigne un seul cas. Les anciennes stories à cas unique
+(`TC-HVC-7`) restent valables telles quelles.
+
 Le fichier lu par `ajouter-story` et `modifier-cas` :
 
 ```json
 {
-  "story_jira": "HVC-6",
-  "exigence": { "nom": "HVC-6 - Inscription d'un nouveau compte",
-                "description": "En tant que visiteur, je veux ...", "criticite": "MAJOR" },
-  "cas": {
-    "reference": "TC-HVC-6",
-    "nom": "Inscription d'un nouveau compte",
-    "description": "Ce que le cas verifie, en une phrase.",
-    "prerequis": "Ce qui doit etre vrai avant de commencer.",
-    "importance": "MEDIUM",
-    "pas": [ { "action": "Ce que fait le testeur", "resultat_attendu": "Ce qu'il doit voir" } ]
-  },
+  "story_jira": "HVC-9",
+  "exigence": { "nom": "HVC-9 - Devenir hôte",
+                "description": "En tant que ..., je veux ... Critères d'acceptation : ...", "criticite": "MAJOR" },
+  "cas": [
+    {
+      "reference": "TC-HVC-9-1",
+      "nom": "Devenir hôte : accès au formulaire (critère 1)",
+      "description": "Ce que le cas verifie, en une phrase.",
+      "prerequis": "Ce qui doit etre vrai avant de commencer.",
+      "importance": "MEDIUM",
+      "pas": [ { "action": "Ce que fait le testeur", "resultat_attendu": "Ce qu'il doit voir" } ]
+    },
+    { "reference": "TC-HVC-9-2", "nom": "Devenir hôte : ... (critère 2)", "pas": [ … ] }
+  ],
   "iteration_id": 1
 }
 ```
 
-- La reference de l'exigence est **la cle de la story Jira** ; celle du cas est `TC-` + cette
-  cle. C'est cette reference que le rapporteur Playwright relit dans le titre du test.
-- `ajouter-story` refuse un cas qui existe deja : passer alors par `modifier-cas`, qui
-  remplace tous les pas et remet le cas « A approuver ».
+- La reference de l'exigence est **la cle de la story Jira** ; celle de chaque cas est
+  `TC-` + cette cle + `-` + son numero (1, 2, 3… dans l'ordre des criteres). C'est cette
+  reference que le rapporteur Playwright relit dans le titre de chaque test.
+- `ajouter-story` cree l'exigence (si besoin) et tous les cas ; il refuse un cas qui existe
+  deja : passer alors par `modifier-cas`, qui reecrit chaque cas du fichier (pas remplaces,
+  statut « A approuver ») et **cree** ceux qui n'existent pas encore. Passage d'un cas unique
+  a plusieurs : l'ancien `TC-HVC-9` est renomme `TC-HVC-9-1` (son historique est garde).
+  Un cas present dans Squash mais absent du fichier est signale (a retirer a la main).
 - `criticite` : `MINOR`, `MAJOR`, `CRITICAL`. `importance` : `LOW`, `MEDIUM`, `HIGH`, `VERY_HIGH`.
-- Verifie en reel le 20/10/2026 (cycle complet HVC-7) : `status` d'un cas, `ajouter-au-plan`,
-  `resultats`, `bilan-iteration`. **Pas encore verifie** : `modifier-cas` (suppression des pas
-  par `DELETE test-steps/{ids}`) — au premier echec, lire le message, corriger ici.
+- Verifie en reel le 20/10/2026 (cycle complet HVC-7, cas unique) : `status` d'un cas,
+  `ajouter-au-plan`, `resultats`, `bilan-iteration`. **Pas encore verifie en reel** : la
+  creation de plusieurs cas, le renommage `TC-HVC-9` -> `TC-HVC-9-1` et `modifier-cas` —
+  au premier echec, lire le message, corriger ici.
 
 ## Ne jamais deviner un identifiant
 

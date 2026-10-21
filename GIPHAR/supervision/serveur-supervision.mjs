@@ -300,14 +300,24 @@ function etat() {
     if (arretee !== undefined) s.arretee = arretee;
   }
   for (const cle of membres) story(cle, lancement.titres?.[cle]);
+  // Les resultats Squash, cas par cas : TC-HVC-9 (cas unique) ou TC-HVC-9-1, TC-HVC-9-2…
+  // (un cas par critere d'acceptation) appartiennent tous a la story HVC-9.
   for (const c of sq?.cas || []) {
-    const cle = c.reference?.replace(/^TC-/, '');
-    if (!cle) continue;
-    const s = story(cle, c.nom.replace(/^TC-\S+\s*-\s*/, ''));
-    s.referenceCas ??= c.reference;
-    s.resultat = RESULTAT[c.statut] || null;
-    s.statutSquash = c.statut;
-    s.joueLe = c.derniereExecution;
+    const m = c.reference?.match(/^TC-([A-Z][A-Z0-9]*-\d+)(?:-(\d+))?$/);
+    if (!m) continue;
+    const nom = c.nom.replace(/^TC-\S+\s*-\s*/, '');
+    // Titre de la story : celui du cas unique, ou le debut du nom d'un des cas (« Devenir hote : … »).
+    const s = story(m[1], m[2] ? nom.split(' : ')[0] : nom);
+    (s.cas ??= []).push({ reference: c.reference, nom: c.nom, resultat: RESULTAT[c.statut] || null, joueLe: c.derniereExecution });
+  }
+  for (const s of Object.values(stories)) {
+    if (!s.cas) continue;
+    s.cas.sort((a, b) => Number(a.reference.split('-')[3] || 0) - Number(b.reference.split('-')[3] || 0));
+    // La story est reussie si TOUS ses cas ont reussi, echouee des qu'un cas echoue.
+    s.resultat = s.cas.some(c => c.resultat === 'echoue') ? 'echoue'
+      : s.cas.every(c => c.resultat === 'reussi') ? 'reussi' : null;
+    s.casReussis = s.cas.filter(c => c.resultat === 'reussi').length;
+    s.joueLe = s.cas.map(c => c.joueLe).filter(Boolean).sort().at(-1) || null;
   }
 
   for (const s of Object.values(stories)) {
@@ -369,15 +379,20 @@ function etat() {
   }
 
   // --- la qualite (regles fixes) -----------------------------------------------------
-  const joues = listeStories.filter(s => s.resultat);
-  const reussis = joues.filter(s => s.resultat === 'reussi').length;
-  const taux = joues.length ? Math.round(reussis / joues.length * 100) : null;
+  // Le taux porte sur les TESTS (les cas joues) ; la couverture, sur les STORIES testees.
+  const tousLesCas = listeStories.flatMap(s => s.cas || []);
+  const casJoues = tousLesCas.filter(c => c.resultat);
+  const reussis = casJoues.filter(c => c.resultat === 'reussi').length;
+  const taux = casJoues.length ? Math.round(reussis / casJoues.length * 100) : null;
   const niveau = taux === null ? null : NIVEAUX.find(n => taux >= n.min);
+  const testees = listeStories.filter(s => s.resultat);
   const qualite = {
-    stories: listeStories.length, joues: joues.length, reussis, echoues: joues.length - reussis,
-    nonJoues: listeStories.length - joues.length, taux, niveau,
-    provisoire: listeStories.length > joues.length,
-    couverture: listeStories.length ? Math.round(joues.length / listeStories.length * 100) : 0,
+    stories: listeStories.length, joues: casJoues.length, reussis, echoues: casJoues.length - reussis, taux, niveau,
+    storiesReussies: testees.filter(s => s.resultat === 'reussi').length,
+    storiesEchouees: testees.filter(s => s.resultat === 'echoue').length,
+    nonJoues: listeStories.length - testees.length,
+    provisoire: listeStories.length > testees.length,
+    couverture: listeStories.length ? Math.round(testees.length / listeStories.length * 100) : 0,
   };
 
   return {
@@ -790,4 +805,4 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   rafraichirSquash(true);
 }
 
-export { etat, lireJournal, bugsDeLaFiche };
+export { etat, lireJournal, bugsDeLaFiche, resultatsSquash };

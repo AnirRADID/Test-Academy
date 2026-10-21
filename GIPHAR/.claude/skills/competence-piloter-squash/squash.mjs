@@ -100,6 +100,20 @@ async function casParReference(projet, ref) {
   if (!trouve) throw new Error(`Aucun cas de test de reference ${ref} dans ${projet.name}.`);
   return trouve;
 }
+// Une story a un ou plusieurs cas : TC-HVC-9 (ancien format, un seul cas) ou TC-HVC-9-1,
+// TC-HVC-9-2… (un cas par critere d'acceptation). « TC-HVC-9 » designe le GROUPE : tous les
+// cas de la story. « TC-HVC-9-2 » designe un seul cas.
+const suffixe = (ref) => Number(ref.match(/-(\d+)-(\d+)$/)?.[2] || 0);
+async function casDuGroupe(projet, ref, tous) {
+  tous ??= await tousLesCas(projet);
+  const groupe = tous.filter(c => c.reference === ref || (/^TC-[A-Z][A-Z0-9]*-\d+$/.test(ref) && new RegExp(`^${ref}-\\d+$`).test(c.reference || '')))
+    .sort((a, b) => suffixe(a.reference) - suffixe(b.reference));
+  if (!groupe.length) throw new Error(`Aucun cas de test de reference ${ref} dans ${projet.name}.`);
+  return groupe;
+}
+// Les cas d'un fichier de donnees : « cas » est un objet (un seul cas) ou une liste.
+const casDuFichier = (d) => (Array.isArray(d.cas) ? d.cas : [d.cas]).filter(Boolean);
+
 async function toutesLesExigences(projet) {
   const sortie = [];
   for (const n of await contenuDe(`projects/${projet.id}/requirements-library/content?size=200`)) {
@@ -108,6 +122,38 @@ async function toutesLesExigences(projet) {
   }
   // comme pour les cas : la reference n'est portee que par la version courante
   return Promise.all(sortie.map(n => appel('GET', `requirements/${n.id}`)));
+}
+
+// L'exigence miroir de la story : creee seulement si la story n'a pas encore la sienne.
+async function exigenceDeLaStory(projet, d) {
+  const existante = (await toutesLesExigences(projet)).find(e => e.current_version?.reference === d.story_jira);
+  if (existante) { console.log(`exigence ${d.story_jira} deja presente (id ${existante.id}), reutilisee`); return existante; }
+  // PIEGE : current_version AVANT name, et le parent est le PROJET.
+  const e = await appel('POST', 'requirements', {
+    _type: 'requirement',
+    current_version: {
+      _type: 'requirement-version', reference: d.story_jira, description: d.exigence.description,
+      criticality: d.exigence.criticite || 'MAJOR', status: 'APPROVED',
+    },
+    name: d.exigence.nom,
+    parent: { _type: 'project', id: projet.id },
+  });
+  console.log(`exigence ${d.story_jira} creee (id ${e.id})`);
+  return e;
+}
+// PIEGE : la couverture (cas -> exigence) ne se pose QU'A LA CREATION du cas.
+async function creerCas(projet, exigence, cas) {
+  const tc = await appel('POST', 'test-cases', {
+    _type: 'test-case',
+    verified_requirements: [{ _type: 'requirement-version', id: exigence.current_version.id }],
+    name: cas.nom, reference: cas.reference,
+    description: cas.description, prerequisite: cas.prerequis,
+    importance: cas.importance || 'MEDIUM',
+    status: STATUTS.A_APPROUVER,
+    parent: { _type: 'project', id: projet.id },
+    steps: pasSquash(cas.pas),
+  });
+  console.log(`cas ${cas.reference} cree (id ${tc.id}), ${cas.pas.length} pas, statut « A approuver »`);
 }
 
 // Statuts d'un cas de test : le nom affiche dans Squash -> la valeur attendue par l'API.
@@ -210,118 +256,127 @@ const commandes = {
     console.log(`A RETENIR pour Jenkins :  SQUASH_ITERATION_ID = ${iter.id}`);
   },
 
+  // Un groupe (TC-HVC-9) : chaque cas est declare automatise sous SA reference, celle que
+  // porte le titre de son test Playwright (« TC-HVC-9-2: … »).
   async tag(ref) {
-    if (!ref) throw new Error('Usage : tag CT-06');
-    const projet = await projetHomey();
-    const c = await casParReference(projet, ref);
-    // Le discriminant _type est obligatoire sur un PATCH.
-    await appel('PATCH', `test-cases/${c.id}`, { _type: 'test-case', automated_test_reference: ref });
-    console.log(`${ref} (id ${c.id}) est declare automatise sous la reference ${ref}.`);
+    if (!ref) throw new Error('Usage : tag TC-HVC-6');
+    for (const c of await casDuGroupe(await projetHomey(), ref)) {
+      // Le discriminant _type est obligatoire sur un PATCH.
+      await appel('PATCH', `test-cases/${c.id}`, { _type: 'test-case', automated_test_reference: c.reference });
+      console.log(`${c.reference} (id ${c.id}) est declare automatise sous la reference ${c.reference}.`);
+    }
   },
 
   async detag(ref) {
-    if (!ref) throw new Error('Usage : detag CT-06');
-    const projet = await projetHomey();
-    const c = await casParReference(projet, ref);
-    // A SAVOIR : un PATCH a null est ignore par Squash, et "" ecrit une chaine vide.
-    // Il n'existe pas de moyen propre de revenir a un vrai NULL par l'API.
-    await appel('PATCH', `test-cases/${c.id}`, { _type: 'test-case', automated_test_reference: '' });
-    console.log(`${ref} (id ${c.id}) n est plus declare automatise.`);
+    if (!ref) throw new Error('Usage : detag TC-HVC-6');
+    for (const c of await casDuGroupe(await projetHomey(), ref)) {
+      // A SAVOIR : un PATCH a null est ignore par Squash, et "" ecrit une chaine vide.
+      // Il n'existe pas de moyen propre de revenir a un vrai NULL par l'API.
+      await appel('PATCH', `test-cases/${c.id}`, { _type: 'test-case', automated_test_reference: '' });
+      console.log(`${c.reference} (id ${c.id}) n est plus declare automatise.`);
+    }
   },
 
   /* ------------------------------------------------- cycle par story (agents) */
 
   // Fichier attendu (cf. competence-piloter-squash/SKILL.md, « Le cycle par story ») :
-  // { story_jira, exigence: { nom, description, criticite }, cas: { reference, nom,
-  //   description, prerequis, importance, pas: [{ action, resultat_attendu }] }, iteration_id? }
+  // { story_jira, exigence: { nom, description, criticite },
+  //   cas: [ { reference, nom, description, prerequis, importance, pas: [{ action, resultat_attendu }] }, … ],
+  //   iteration_id? }
+  // « cas » peut aussi etre un objet unique (ancien format : un seul cas par story).
   async 'ajouter-story'(fichier) {
     if (!fichier) throw new Error('Usage : ajouter-story <fichier.json>');
     const d = lireJson(fichier);
     const projet = await projetHomey();
-
-    if ((await tousLesCas(projet)).some(c => c.reference === d.cas.reference))
-      throw new Error(`Le cas ${d.cas.reference} existe deja. Utiliser modifier-cas.`);
-
-    // L'exigence miroir n'est creee que si la story n'a pas encore la sienne.
-    let exigence = (await toutesLesExigences(projet))
-      .find(e => e.current_version?.reference === d.story_jira);
-    if (exigence) {
-      console.log(`exigence ${d.story_jira} deja presente (id ${exigence.id}), reutilisee`);
-    } else {
-      // PIEGE : current_version AVANT name, et le parent est le PROJET.
-      exigence = await appel('POST', 'requirements', {
-        _type: 'requirement',
-        current_version: {
-          _type: 'requirement-version', reference: d.story_jira, description: d.exigence.description,
-          criticality: d.exigence.criticite || 'MAJOR', status: 'APPROVED',
-        },
-        name: d.exigence.nom,
-        parent: { _type: 'project', id: projet.id },
-      });
-      console.log(`exigence ${d.story_jira} creee (id ${exigence.id})`);
-    }
-
-    // PIEGE : la couverture ne se pose QU'A LA CREATION du cas.
-    const tc = await appel('POST', 'test-cases', {
-      _type: 'test-case',
-      verified_requirements: [{ _type: 'requirement-version', id: exigence.current_version.id }],
-      name: d.cas.nom, reference: d.cas.reference,
-      description: d.cas.description, prerequisite: d.cas.prerequis,
-      importance: d.cas.importance || 'MEDIUM',
-      status: STATUTS.A_APPROUVER,
-      parent: { _type: 'project', id: projet.id },
-      steps: pasSquash(d.cas.pas),
-    });
-    console.log(`cas ${d.cas.reference} cree (id ${tc.id}), ${d.cas.pas.length} pas, statut « A approuver »`);
-
-    if (d.iteration_id) await commandes['ajouter-au-plan'](d.cas.reference, d.iteration_id);
+    const lesCas = casDuFichier(d);
+    const tous = await tousLesCas(projet);
+    const deja = lesCas.filter(c => tous.some(t => t.reference === c.reference));
+    if (deja.length) throw new Error(`Cas deja presents : ${deja.map(c => c.reference).join(', ')}. Utiliser modifier-cas.`);
+    const exigence = await exigenceDeLaStory(projet, d);
+    for (const cas of lesCas) await creerCas(projet, exigence, cas);
+    if (d.iteration_id) for (const cas of lesCas) await commandes['ajouter-au-plan'](cas.reference, d.iteration_id);
   },
 
-  // Meme fichier que ajouter-story (seule la partie « cas » est lue). Les pas sont
-  // entierement remplaces : la couverture, elle, ne bouge pas.
+  // Meme fichier que ajouter-story. Chaque cas du fichier est reecrit (pas entierement
+  // remplaces) ou cree s'il n'existe pas encore ; la couverture des cas existants ne bouge pas.
+  // Passage d'un cas unique a plusieurs : l'ancien cas TC-HVC-9 devient TC-HVC-9-1.
   async 'modifier-cas'(fichier) {
     if (!fichier) throw new Error('Usage : modifier-cas <fichier.json>');
-    const { cas } = lireJson(fichier);
-    const c = await casParReference(await projetHomey(), cas.reference);
-    await appel('PATCH', `test-cases/${c.id}`, {
-      _type: 'test-case', name: cas.nom, description: cas.description,
-      prerequisite: cas.prerequis, status: STATUTS.A_APPROUVER,
-    });
-    const anciens = (await appel('GET', `test-cases/${c.id}/steps?size=200`))?._embedded?.steps || [];
-    if (anciens.length) await appel('DELETE', `test-steps/${anciens.map(s => s.id).join(',')}`);
-    for (const s of pasSquash(cas.pas)) await appel('POST', `test-cases/${c.id}/steps`, s);
-    console.log(`cas ${cas.reference} reecrit : ${cas.pas.length} pas, statut « A approuver »`);
+    const d = lireJson(fichier);
+    const projet = await projetHomey();
+    const lesCas = casDuFichier(d);
+    let tous = await tousLesCas(projet);
+    const groupe = d.story_jira ? `TC-${d.story_jira}` : null;
+    const ancien = groupe && tous.find(t => t.reference === groupe);
+    if (ancien && lesCas.some(c => c.reference === `${groupe}-1`) && !tous.some(t => t.reference === `${groupe}-1`)) {
+      await appel('PATCH', `test-cases/${ancien.id}`, { _type: 'test-case', reference: `${groupe}-1` });
+      console.log(`cas ${groupe} renomme en ${groupe}-1 (un cas par critere d'acceptation)`);
+      tous = await tousLesCas(projet);
+    }
+    let exigence = null;
+    for (const cas of lesCas) {
+      const c = tous.find(t => t.reference === cas.reference);
+      if (!c) { exigence ??= await exigenceDeLaStory(projet, d); await creerCas(projet, exigence, cas); continue; }
+      await appel('PATCH', `test-cases/${c.id}`, {
+        _type: 'test-case', name: cas.nom, description: cas.description,
+        prerequisite: cas.prerequis, status: STATUTS.A_APPROUVER,
+      });
+      const anciens = (await appel('GET', `test-cases/${c.id}/steps?size=200`))?._embedded?.steps || [];
+      if (anciens.length) await appel('DELETE', `test-steps/${anciens.map(x => x.id).join(',')}`);
+      for (const x of pasSquash(cas.pas)) await appel('POST', `test-cases/${c.id}/steps`, x);
+      console.log(`cas ${cas.reference} reecrit : ${cas.pas.length} pas, statut « A approuver »`);
+    }
+    if (groupe) {
+      const enTrop = (await casDuGroupe(projet, groupe, tous).catch(() => []))
+        .filter(c => !lesCas.some(x => x.reference === c.reference));
+      for (const c of enTrop) console.log(`ATTENTION : ${c.reference} existe dans Squash mais n'est plus dans le fichier (a retirer du plan ou a supprimer a la main).`);
+    }
   },
 
+  // Un cas (TC-HVC-9-2) ou tout le groupe d'une story (TC-HVC-9).
   async 'lire-cas'(ref, format) {
     if (!ref) throw new Error('Usage : lire-cas TC-HVC-6 [--json]');
-    const c = await casParReference(await projetHomey(), ref);
-    const pas = (await appel('GET', `test-cases/${c.id}/steps?size=200`))?._embedded?.steps || [];
+    const lesCas = [];
+    for (const c of await casDuGroupe(await projetHomey(), ref)) {
+      const pas = (await appel('GET', `test-cases/${c.id}/steps?size=200`))?._embedded?.steps || [];
+      lesCas.push({ c, pas });
+    }
     if (format === '--json') return console.log(JSON.stringify({
-      reference: c.reference, nom: c.name, statut: c.status, description: c.description || '',
-      pas: pas.map(s => ({ action: s.action, attendu: s.expected_result })) }));
-    console.log(`${c.reference} — ${c.name}   (id ${c.id}, statut ${c.status})`);
-    console.log(`automatise sous : ${c.automated_test_reference || '—'}`);
-    console.log(`exigence(s)     : ${(c.verified_requirements || []).map(v => v.name || `#${v.id}`).join(', ') || '—'}`);
-    console.log(`\nDescription : ${c.description || '—'}\nPrerequis   : ${c.prerequisite || '—'}\n`);
-    pas.forEach((s, i) => console.log(`Pas ${i + 1}\n  action   : ${s.action}\n  attendu  : ${s.expected_result}`));
+      reference: ref, nb: lesCas.length,
+      cas: lesCas.map(({ c, pas }) => ({ reference: c.reference, nom: c.name, statut: c.status, description: c.description || '',
+        prerequis: c.prerequisite || '', automatise: c.automated_test_reference || null,
+        pas: pas.map(x => ({ action: x.action, attendu: x.expected_result })) })) }));
+    if (lesCas.length > 1) console.log(`${ref} : ${lesCas.length} cas de test\n`);
+    for (const { c, pas } of lesCas) {
+      console.log(`${c.reference} — ${c.name}   (id ${c.id}, statut ${c.status})`);
+      console.log(`automatise sous : ${c.automated_test_reference || '—'}`);
+      console.log(`exigence(s)     : ${(c.verified_requirements || []).map(v => v.name || `#${v.id}`).join(', ') || '—'}`);
+      console.log(`\nDescription : ${c.description || '—'}\nPrerequis   : ${c.prerequisite || '—'}\n`);
+      pas.forEach((x, i) => console.log(`Pas ${i + 1}\n  action   : ${x.action}\n  attendu  : ${x.expected_result}`));
+      console.log('');
+    }
   },
 
   async statut(ref, nom) {
     if (!ref || !STATUTS[nom]) throw new Error(`Usage : statut TC-HVC-6 <${Object.keys(STATUTS).join('|')}>`);
-    const c = await casParReference(await projetHomey(), ref);
-    await appel('PATCH', `test-cases/${c.id}`, { _type: 'test-case', status: STATUTS[nom] });
-    console.log(`${ref} (id ${c.id}) passe au statut ${STATUTS[nom]}.`);
+    for (const c of await casDuGroupe(await projetHomey(), ref)) {
+      await appel('PATCH', `test-cases/${c.id}`, { _type: 'test-case', status: STATUTS[nom] });
+      console.log(`${c.reference} (id ${c.id}) passe au statut ${STATUTS[nom]}.`);
+    }
   },
 
   async 'ajouter-au-plan'(ref, iterationId) {
     if (!ref || !iterationId) throw new Error('Usage : ajouter-au-plan TC-HVC-6 <iteration_id>');
-    if ((await planDeLIteration(iterationId)).some(i => i.referenced_test_case?.reference === ref))
-      return console.log(`${ref} est deja au plan de l'iteration ${iterationId}.`);
-    const c = await casParReference(await projetHomey(), ref);
-    await appel('POST', `iterations/${iterationId}/test-plan`,
-      { _type: 'iteration-test-plan-item', test_case: { _type: 'test-case', id: c.id } });
-    console.log(`${ref} ajoute au plan de l'iteration ${iterationId}.`);
+    const plan = await planDeLIteration(iterationId);
+    for (const c of await casDuGroupe(await projetHomey(), ref)) {
+      if (plan.some(i => i.referenced_test_case?.reference === c.reference)) {
+        console.log(`${c.reference} est deja au plan de l'iteration ${iterationId}.`);
+        continue;
+      }
+      await appel('POST', `iterations/${iterationId}/test-plan`,
+        { _type: 'iteration-test-plan-item', test_case: { _type: 'test-case', id: c.id } });
+      console.log(`${c.reference} ajoute au plan de l'iteration ${iterationId}.`);
+    }
   },
 
   async resultats(iterationId, format) {

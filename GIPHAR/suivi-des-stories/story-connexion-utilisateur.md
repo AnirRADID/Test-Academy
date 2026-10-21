@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Où en est-on** | Étape 2 sur 6 — cas de test déjà validé, story inchangée |
-| **Prochaine action** | Automatisation du cas par l'agent automaticien |
+| **Où en est-on** | Étape 4 sur 6 — exécution de la campagne |
+| **Prochaine action** | L'agent exécutant joue la campagne dans Squash (aucune action humaine requise) |
 | **Story Jira** | [Connexion utilisateur](https://testacademy.atlassian.net/browse/HVC-7) |
-| **Dernière mise à jour** | 20/10/2026 17:53 par l'agent analyste |
+| **Dernière mise à jour** | 20/10/2026 19:35 par l'agent automaticien |
 
 ## 1. Cas de test rédigé — agent analyste
 
@@ -35,6 +35,12 @@ n'a été reçue) :
 
 Si vous refusez le cas en citant ces points, il sera corrigé au prochain passage.
 
+Note du 20/10/2026 19:30 : **cas inchangé depuis sa dernière approbation** (le 20/10/2026
+12:18). La story n'a pas changé dans Jira depuis : son titre, sa description et ses critères
+d'acceptation sont les mêmes ; seuls son statut et ses étiquettes de suivi ont bougé. Le cas
+n'a donc pas été modifié. Il a seulement été remis au statut « À approuver », car un humain
+valide le cas à chaque lancement. Les points à surveiller ci-dessus restent valables.
+
 ## 2. Validation humaine
 
 Cas validé le 20/10/2026 12:18. Remarques du valideur : aucune.
@@ -42,6 +48,11 @@ Cas validé le 20/10/2026 12:18. Remarques du valideur : aucune.
 Cas déjà approuvé, story inchangée depuis : validation non redemandée (passage du
 20/10/2026 17:53). Le titre et la description de la story dans Jira n'ont pas changé depuis
 la validation : seules les étiquettes de suivi ont bougé.
+
+**Nouveau lancement du 20/10/2026 19:30** : le cas a été remis « À approuver » sans changer
+son contenu.
+
+**Cas validé le 20/10/2026 19:35.** Remarques du valideur : aucune.
 
 ## 3. Test automatisé — agent automaticien
 
@@ -61,6 +72,10 @@ réussies sur 2). Le cas est déclaré « automatisé » dans Squash.
 **Traçabilité** : fichier `tests/tc-hvc-7-connexion-utilisateur.spec.ts` (repris et
 corrigé : il dépendait auparavant d'identifiants fournis par variables d'environnement, qui
 n'existent pas ici) · cas Squash TC-HVC-7.
+
+**Passage du 20/10/2026 19:35** : le cas validé n'a pas changé (mêmes 2 étapes), le test
+existant n'a donc pas été modifié. Revérifié sur le vrai site : ✅ **passe sur le site**
+(1 exécution réussie sur 1, du premier coup). Le cas reste déclaré « automatisé » dans Squash.
 
 ## 4. Exécution de la campagne — agent exécutant
 

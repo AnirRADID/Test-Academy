@@ -3,9 +3,9 @@
 | | |
 |---|---|
 | **Où en est-on** | Étape 2 sur 6 — cas de test en attente de votre validation |
-| **Prochaine action** | Relire le cas de test dans Squash (référence TC-HVC-9), puis cliquer sur [Valider ou refuser le cas](http://localhost:5678/form-waiting/47?signature=e54e50aa3c3deb86be60247f07b8ed4f86ae3a5b6e42c28ef647fa1719352100) |
+| **Prochaine action** | Relire le cas de test dans Squash (référence TC-HVC-9), puis cliquer sur [Valider ou refuser le cas](http://localhost:5678/form-waiting/96?signature=cd4c0a25f1828e4fc8f58130e252c2a01df6436560ce536f183d2ac8722db8c4) |
 | **Story Jira** | [Devenir hôte](https://testacademy.atlassian.net/browse/HVC-9) |
-| **Dernière mise à jour** | 20/10/2026 17:53 par l'agent analyste |
+| **Dernière mise à jour** | 20/10/2026 19:37 par l'agent analyste |
 
 ## 1. Cas de test rédigé — agent analyste
 
@@ -33,9 +33,41 @@ n'a été reçue) :
 
 Si vous refusez le cas en citant ce point, il sera corrigé au prochain passage.
 
+Note du 20/10/2026 19:30 : nouveau lancement. La story Jira a été relue : son titre, sa
+description et ses critères d'acceptation n'ont pas changé. Le cas est donc inchangé depuis
+le passage précédent (cas inchangé depuis sa dernière approbation, s'il avait été approuvé) ;
+il a seulement été remis au statut « À approuver », car un humain valide à chaque lancement.
+
+**Blocage du 20/10/2026 19:32 suite aux remarques** : le valideur a refusé le cas et
+demandé de « créer un cas de test pour chaque critère d'acceptation », donc deux cas
+distincts pour cette story. Je n'ai rien créé ni modifié dans Squash, pour la raison
+suivante : le cycle automatisé suit **un seul cas par story** (TC-HVC-9). C'est ce cas que
+le formulaire fait approuver et que l'agent automaticien transforme en test. Un second cas
+ne serait jamais approuvé ni automatisé et resterait en suspens dans Squash. Le cas
+TC-HVC-9 reste tel qu'il était (2 étapes, une par critère d'acceptation).
+
+Deux options pour débloquer :
+- **Garder un seul cas, avec une étape par critère** : c'est déjà le découpage actuel
+  (étape 1 = critère 1, étape 2 = critère 2). Relancer la story en précisant ce qu'il faut
+  améliorer dans ces étapes.
+- **Vraiment un cas par critère** : il faut d'abord faire évoluer le cycle (formulaire de
+  validation, approbation, automatisation) pour qu'il gère plusieurs cas par story. C'est
+  une décision à prendre par le formateur, pas par l'agent.
+
+Note du 20/10/2026 19:37 : nouveau lancement, sans remarque de refus. La story Jira a été
+relue : son titre, sa description et ses critères d'acceptation n'ont pas changé. Le cas
+TC-HVC-9 est donc **inchangé depuis sa dernière version** (2 étapes, une par critère
+d'acceptation) ; il a seulement été remis au statut « À approuver », car un humain valide à
+chaque lancement. Le blocage précédent est levé : si vous souhaitez toujours un découpage
+différent, refusez le cas en le précisant.
+
 ## 2. Validation humaine
 
-En attente de validation : [valider ou refuser le cas](http://localhost:5678/form-waiting/47?signature=e54e50aa3c3deb86be60247f07b8ed4f86ae3a5b6e42c28ef647fa1719352100).
+Historique : cas refusé le 20/10/2026 avec la remarque « Créer un cas de test pour chaque
+critère d'acceptation » (correction bloquée, voir section 1).
+
+**20/10/2026 19:37 — En attente de validation** :
+[valider ou refuser le cas](http://localhost:5678/form-waiting/96?signature=cd4c0a25f1828e4fc8f58130e252c2a01df6436560ce536f183d2ac8722db8c4).
 
 ## 3. Test automatisé — agent automaticien
 

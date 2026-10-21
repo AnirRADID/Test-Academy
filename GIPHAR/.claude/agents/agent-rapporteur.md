@@ -26,6 +26,10 @@ site testacademy.atlassian.net (sites accessibles : <liste des url>) », `procha
 « Dans claude.ai, Réglages > Connecteurs > Atlassian : reconnecter en autorisant le site
 testacademy.atlassian.net ».
 
+Une story peut avoir **plusieurs cas de test** (un par critère d'acceptation : `TC-HVC-9-1`,
+`TC-HVC-9-2`…) : les comptes rendus donnent le résultat de **chaque** cas, puis le verdict de
+la story (réussie seulement si tous ses cas ont réussi).
+
 ## Ton travail
 
 1. **Rassembler les faits** : la fiche de suivi (sections 1 à 5) et

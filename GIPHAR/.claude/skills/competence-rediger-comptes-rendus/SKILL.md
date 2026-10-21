@@ -35,13 +35,18 @@ sections des autres. Si la fiche existe déjà (nouveau passage), on complète, 
 | **Story Jira** | [Inscription d'un nouveau compte](https://testacademy.atlassian.net/browse/HVC-6) |
 | **Dernière mise à jour** | 06/10/2026 10:15 par l'agent analyste |
 
-## 1. Cas de test rédigé — agent analyste
+## 1. Cas de test rédigés — agent analyste
 ## 2. Validation humaine
 ## 3. Test automatisé — agent automaticien
 ## 4. Exécution de la campagne — agent exécutant
 ## 5. Anomalies — agent gestionnaire d'anomalies
 ## 6. Comptes rendus publiés — agent rapporteur
 ```
+
+Une story a **un cas de test par critère d'acceptation** (`TC-HVC-9-1`, `TC-HVC-9-2`…) : la
+section 1 décrit chaque cas sous son propre sous-titre (`### TC-HVC-9-1 — <nom>`), et les
+sections 3 à 6 donnent un résultat **par cas** avant le verdict de la story (réussie
+seulement si tous ses cas ont réussi).
 
 Les étapes, pour « Où en est-on » :
 1. Rédaction du cas de test · 2. Validation humaine · 3. Écriture du test automatisé ·
@@ -52,14 +57,16 @@ Une section non encore traitée contient seulement `_En attente._`
 ## 2. Commentaire Jira « cas prêt à valider » (agent analyste)
 
 ```markdown
-**🧪 Cas de test prêt à valider**
+**🧪 Cas de test prêts à valider**
 
-J'ai rédigé le cas de test « Inscription d'un nouveau compte » dans Squash (6 étapes).
-Il vérifie que : <une phrase>.
+J'ai rédigé 3 cas de test dans Squash pour « Devenir hôte », un par critère d'acceptation :
+- TC-HVC-9-1 — <nom> (4 étapes) : vérifie que <une phrase>
+- TC-HVC-9-2 — <nom> (3 étapes) : vérifie que <une phrase>
+- TC-HVC-9-3 — <nom> (2 étapes) : vérifie que <une phrase>
 
-👉 **À faire** : relire le cas dans Squash (référence TC-HVC-6), puis
-[valider ou refuser le cas](<lien du formulaire>). Le test automatisé ne sera écrit
-qu'après votre validation.
+👉 **À faire** : relire ces cas (dans la Tour de contrôle ou dans Squash), puis
+[valider ou refuser](<lien du formulaire>). En cas de refus, préciser quel cas corriger. Les
+tests automatisés ne seront écrits qu'après votre validation.
 ```
 
 ## 3. Compte rendu final dans la story Jira (agent rapporteur)
@@ -69,14 +76,16 @@ Ne parle **que de cette story**.
 ```markdown
 **✅ Recette automatisée terminée — 06/10/2026 14:32**   (ou ❌ … : 1 anomalie)
 
-**Ce qui a été vérifié** : <reprise en une phrase de ce que vérifie le cas>
-**Résultat** : réussi / échoué à l'étape « <nom de l'étape> »
+**Ce qui a été vérifié**, cas par cas :
+- ✅ TC-HVC-9-1 — <ce que vérifie le cas> : réussi
+- ❌ TC-HVC-9-2 — <ce que vérifie le cas> : échoué à l'étape « <nom de l'étape> »
+**Verdict de la story** : réussie (tous les cas ont réussi) / échouée (1 cas sur 3 en échec)
 
 **Anomalies** (si échec) :
 - [HVC-14 — Le message d'erreur n'apparaît pas…](lien) — nouvelle anomalie créée
 - [HVC-12 — …](lien) — anomalie déjà connue, reproduite à nouveau
 
-**Traçabilité** : cas Squash TC-HVC-6 · test `tests/tc-hvc-6-inscription-compte.spec.ts`
+**Traçabilité** : cas Squash TC-HVC-9-1 à TC-HVC-9-3 · tests `tests/tc-hvc-9-devenir-hote.spec.ts`
 · itération Squash <nom>
 ```
 

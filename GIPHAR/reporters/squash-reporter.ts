@@ -87,9 +87,12 @@ function stripAnsi(text: string): string {
   return text.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
-/** La reference Squash est portee par le titre du test : "TC-HVC-1: ..." -> TC-HVC-1. */
+/**
+ * La reference Squash est portee par le titre du test : "TC-HVC-1: ..." -> TC-HVC-1, et pour
+ * une story a plusieurs cas (un par critere d'acceptation) "TC-HVC-9-2: ..." -> TC-HVC-9-2.
+ */
 function squashReference(test: TestCase): string | null {
-  const m = test.title.match(/^(TC-HVC-\d+)\s*:/);
+  const m = test.title.match(/^(TC-[A-Z][A-Z0-9]*-\d+(?:-\d+)?)\s*:/);
   return m ? m[1] : null;
 }
 
@@ -126,7 +129,7 @@ class SquashReporter implements Reporter {
   onTestEnd(test: TestCase, result: TestResult) {
     const reference = squashReference(test);
     if (!reference) {
-      console.log(`[squash] test sans reference TC-HVC-x dans le titre, ignore : ${test.title}`);
+      console.log(`[squash] test sans reference TC-HVC-x (ou TC-HVC-x-n) dans le titre, ignore : ${test.title}`);
       return;
     }
     this.resultats.push({

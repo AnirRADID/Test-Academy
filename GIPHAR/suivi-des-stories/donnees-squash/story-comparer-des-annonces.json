@@ -1,0 +1,38 @@
+{
+  "story_jira": "HVC-10",
+  "exigence": {
+    "nom": "HVC-10 - Comparer des annonces",
+    "description": "En tant que voyageur hésitant entre plusieurs logements, je veux comparer des annonces entre elles, afin de choisir plus facilement.\n\nCritères d'acceptation :\n- La section « Comparer les annonces » permet de sélectionner au moins deux logements.\n- Un tableau ou une vue de comparaison affiche les critères clés (prix, équipements, capacité…) côte à côte.\n\nPriorité : Basse (Could have).",
+    "criticite": "MINOR"
+  },
+  "cas": {
+    "reference": "TC-HVC-10",
+    "nom": "TC-HVC-10 - Comparer des annonces",
+    "description": "Vérifie qu'un voyageur peut sélectionner au moins deux logements et les voir côte à côte dans une vue de comparaison présentant leurs critères clés (prix, équipements, capacité). Vérifie l'exigence HVC-10.",
+    "prerequis": "Le site Homey est ouvert ; une recherche (par exemple sur la ville de Miami) renvoie au moins deux logements.",
+    "importance": "LOW",
+    "pas": [
+      {
+        "action": "Lancer une recherche de logements (par exemple sur la ville de Miami).",
+        "resultat_attendu": "La page de résultats affiche plusieurs logements, chacun avec une option « Comparer »."
+      },
+      {
+        "action": "Cliquer sur « Comparer » pour le premier logement, puis pour le deuxième logement.",
+        "resultat_attendu": "Le compteur de comparaison indique 2 logements sélectionnés."
+      },
+      {
+        "action": "Ouvrir le panneau de comparaison.",
+        "resultat_attendu": "Les deux logements sélectionnés apparaissent dans le panneau."
+      },
+      {
+        "action": "Cliquer sur le bouton « Comparer » du panneau.",
+        "resultat_attendu": "La page de comparaison s'affiche et présente les deux logements choisis côte à côte."
+      },
+      {
+        "action": "Observer le contenu de la page de comparaison.",
+        "resultat_attendu": "Les critères clés des deux logements sont affichés côte à côte : au minimum le prix, les équipements et la capacité (nombre de voyageurs ou de chambres)."
+      }
+    ]
+  },
+  "iteration_id": 1
+}
