@@ -5,22 +5,41 @@
     "description": "En tant qu'utilisateur ayant oublié son mot de passe, je veux demander une réinitialisation via mon email, afin de retrouver l'accès à mon compte.\n\nCritères d'acceptation :\n- Le lien « mot de passe oublié ? » ouvre un formulaire demandant l'email/identifiant.\n- La soumission déclenche l'envoi d'un email de réinitialisation (à vérifier côté back-end).\n\nPriorité : Moyenne (Should have).",
     "criticite": "MAJOR"
   },
-  "cas": {
-    "reference": "TC-HVC-8",
-    "nom": "TC-HVC-8 - Reinitialisation du mot de passe",
-    "description": "Automatise par tests/tc-hvc-8-mot-de-passe-oublie.spec.ts. Verifie l exigence HVC-8.",
-    "prerequis": "",
-    "importance": "MEDIUM",
-    "pas": [
-      {
-        "action": "Ouvrir la page d'accueil, cliquer sur Se connecter puis sur « mot de passe oublie ? ».",
-        "resultat_attendu": "Le formulaire de reinitialisation s affiche, demandant l email ou l identifiant."
-      },
-      {
-        "action": "Saisir un email et cliquer sur Soumettre.",
-        "resultat_attendu": "Un message confirme la soumission de la demande de reinitialisation."
-      }
-    ]
-  },
+  "cas": [
+    {
+      "reference": "TC-HVC-8-1",
+      "nom": "Réinitialisation du mot de passe : le lien « mot de passe oublié ? » ouvre le formulaire (critère 1)",
+      "description": "Vérifie que le lien « mot de passe oublié ? » ouvre un formulaire qui demande l'email ou l'identifiant du compte.",
+      "prerequis": "Le visiteur n'est pas connecté et se trouve sur la page d'accueil du site.",
+      "importance": "MEDIUM",
+      "pas": [
+        {
+          "action": "Depuis la page d'accueil, cliquer sur « Se connecter ».",
+          "resultat_attendu": "La fenêtre de connexion s'affiche et propose le lien « mot de passe oublié ? »."
+        },
+        {
+          "action": "Cliquer sur le lien « mot de passe oublié ? ».",
+          "resultat_attendu": "Le formulaire de réinitialisation s'affiche : il demande l'email ou l'identifiant du compte et propose un bouton pour envoyer la demande."
+        }
+      ]
+    },
+    {
+      "reference": "TC-HVC-8-2",
+      "nom": "Réinitialisation du mot de passe : l'envoi du formulaire déclenche l'email de réinitialisation (critère 2)",
+      "description": "Vérifie que l'envoi du formulaire « mot de passe oublié ? » avec l'email d'un compte existant déclenche l'envoi d'un email de réinitialisation, confirmé à l'écran.",
+      "prerequis": "Un compte existe déjà sur le site avec une adresse email connue du testeur. Le visiteur n'est pas connecté.",
+      "importance": "MEDIUM",
+      "pas": [
+        {
+          "action": "Depuis la page d'accueil, cliquer sur « Se connecter » puis sur « mot de passe oublié ? ».",
+          "resultat_attendu": "Le formulaire de réinitialisation s'affiche et demande l'email ou l'identifiant."
+        },
+        {
+          "action": "Saisir l'adresse email du compte existant, puis cliquer sur le bouton d'envoi du formulaire.",
+          "resultat_attendu": "Après un court message d'attente, un message confirme qu'un email de réinitialisation a été envoyé (« Check your email »)."
+        }
+      ]
+    }
+  ],
   "iteration_id": 1
 }

@@ -2,12 +2,77 @@
 
 | | |
 |---|---|
-| **Où en est-on** | Étape 4 sur 6 — exécution de la campagne |
-| **Prochaine action** | L'agent exécutant joue la campagne dans Squash (aucune action humaine requise) |
+| **Où en est-on** | Étape 2 sur 6 — 3 cas de test en attente de votre validation |
+| **Prochaine action** | Relire les cas TC-HVC-7-1 à TC-HVC-7-3 dans Squash, puis cliquer sur [Valider ou refuser les cas](http://localhost:5678/form-waiting/127?signature=01939759cce85aef2ed52894fb9b367e9fa0dcd9677a487e952f8f988e9e8ece) |
 | **Story Jira** | [Connexion utilisateur](https://testacademy.atlassian.net/browse/HVC-7) |
-| **Dernière mise à jour** | 20/10/2026 19:35 par l'agent automaticien |
+| **Dernière mise à jour** | 25/10/2026 12:23 par l'agent analyste |
 
-## 1. Cas de test rédigé — agent analyste
+## 1. Cas de test rédigés — agent analyste
+
+### Passage du 25/10/2026 12:23 — un cas par critère d'acceptation
+
+La story a été relue dans Jira : son contenu n'a pas changé (mêmes 3 critères d'acceptation).
+Mais le cas était encore au format à cas unique (TC-HVC-7), alors que la story compte
+**3 critères d'acceptation**. Il a donc été scindé en 3 cas, un par critère : l'ancien cas
+TC-HVC-7 a été renommé TC-HVC-7-1 (son historique est gardé) et réécrit, TC-HVC-7-2 et
+TC-HVC-7-3 ont été créés. Les 3 cas sont au statut « À approuver ». Ce découpage corrige au
+passage les trois points à surveiller notés plus bas (connexion par email, effet de « Se
+souvenir de moi », message d'erreur).
+
+#### TC-HVC-7-1 — Connexion utilisateur : connexion par nom d'utilisateur ou par email (critère 1)
+
+**Ce qu'il vérifie** : le formulaire de connexion accepte le nom d'utilisateur **ou**
+l'adresse email, avec le mot de passe.
+**Avant de commencer** : un compte existe (nom d'utilisateur, email et mot de passe connus) ;
+le testeur n'est pas connecté.
+
+1. Ouvrir la page d'accueil, puis cliquer sur « Se connecter ».
+   → Le formulaire de connexion s'affiche (champ nom d'utilisateur ou email, champ mot de
+   passe, bouton pour valider).
+2. Saisir le nom d'utilisateur et le mot de passe, puis valider.
+   → L'utilisateur est connecté : le lien « Se connecter » n'est plus visible.
+3. Se déconnecter.
+   → Le lien « Se connecter » est de nouveau visible.
+4. Cliquer sur « Se connecter », saisir cette fois l'adresse email et le mot de passe, puis valider.
+   → L'utilisateur est connecté : le lien « Se connecter » n'est plus visible.
+
+#### TC-HVC-7-2 — Connexion utilisateur : « Se souvenir de moi » prolonge la session (critère 2)
+
+**Ce qu'il vérifie** : avec « Se souvenir de moi », l'utilisateur reste connecté après la
+fermeture du navigateur ; sans cette option, il ne l'est plus.
+**Avant de commencer** : un compte existe (identifiants connus) ; le testeur n'est pas connecté.
+
+1. Ouvrir la page d'accueil, puis cliquer sur « Se connecter ».
+   → Le formulaire propose une case à cocher « Se souvenir de moi ».
+2. Saisir des identifiants valides, cocher « Se souvenir de moi », puis valider.
+   → L'utilisateur est connecté.
+3. Fermer complètement le navigateur, le rouvrir, revenir sur la page d'accueil.
+   → L'utilisateur est toujours connecté, sans ressaisir ses identifiants.
+4. Se déconnecter, se reconnecter **sans** cocher « Se souvenir de moi », fermer complètement
+   le navigateur, le rouvrir et revenir sur la page d'accueil.
+   → L'utilisateur n'est plus connecté : le lien « Se connecter » est de nouveau visible.
+
+#### TC-HVC-7-3 — Connexion utilisateur : message d'erreur clair si les identifiants sont invalides (critère 3)
+
+**Ce qu'il vérifie** : des identifiants invalides refusent la connexion et affichent un
+message d'erreur clair.
+**Avant de commencer** : un compte existe (nom d'utilisateur connu) ; le testeur n'est pas connecté.
+
+1. Ouvrir la page d'accueil, cliquer sur « Se connecter », saisir le nom d'utilisateur d'un
+   compte existant avec un mauvais mot de passe, puis valider.
+   → La connexion est refusée : le formulaire reste affiché, un message d'erreur clair indique
+   que les identifiants sont incorrects.
+2. Saisir un nom d'utilisateur ou un email qui ne correspond à aucun compte, avec un mot de
+   passe quelconque, puis valider.
+   → La connexion est refusée et le même message d'erreur clair s'affiche.
+
+**À noter pendant la relecture** : la story écrit « (à vérifier) » à côté du message d'erreur
+et n'en donne pas le texte exact. Le cas demande donc un message « clair » sans imposer de
+formulation. Si vous voulez imposer un texte précis, refusez le cas TC-HVC-7-3 en le donnant.
+
+---
+
+_Historique des passages précédents (ancien cas unique TC-HVC-7) :_
 
 **Nom** : TC-HVC-7 - Connexion utilisateur (2 étapes)
 
@@ -35,6 +100,15 @@ n'a été reçue) :
 
 Si vous refusez le cas en citant ces points, il sera corrigé au prochain passage.
 
+**⚠ Passage du 25/10/2026 12:18 — bloqué.** Le connecteur Atlassian de Claude demande une
+nouvelle autorisation. L'agent analyste n'a donc pas pu lire la story dans Jira (ni le titre,
+ni la description, ni les critères d'acceptation). Sans cette lecture, il est impossible de
+savoir si la story a changé, ni d'écrire un cas par critère d'acceptation. Rien n'a été modifié
+dans Squash : le cas TC-HVC-7 garde son contenu et son statut « Approuvé ». Aucun commentaire
+n'a été posté dans Jira. À noter pour le prochain passage : le cas est encore au format à cas
+unique (TC-HVC-7). Si la story compte plusieurs critères d'acceptation, il faudra le scinder
+en TC-HVC-7-1, TC-HVC-7-2…
+
 Note du 20/10/2026 19:30 : **cas inchangé depuis sa dernière approbation** (le 20/10/2026
 12:18). La story n'a pas changé dans Jira depuis : son titre, sa description et ses critères
 d'acceptation sont les mêmes ; seuls son statut et ses étiquettes de suivi ont bougé. Le cas
@@ -53,6 +127,10 @@ la validation : seules les étiquettes de suivi ont bougé.
 son contenu.
 
 **Cas validé le 20/10/2026 19:35.** Remarques du valideur : aucune.
+
+**Nouveau lancement du 25/10/2026 12:23 — en attente de validation.** Le cas unique a été
+scindé en 3 cas (TC-HVC-7-1 à TC-HVC-7-3), tous « À approuver ».
+👉 [Valider ou refuser les cas](http://localhost:5678/form-waiting/127?signature=01939759cce85aef2ed52894fb9b367e9fa0dcd9677a487e952f8f988e9e8ece)
 
 ## 3. Test automatisé — agent automaticien
 

@@ -5,22 +5,74 @@
     "description": "En tant que visiteur, je veux créer un compte avec nom d'utilisateur, email et mot de passe, afin de pouvoir réserver ou devenir hôte.\n\nCritères d'acceptation :\n- Le formulaire exige nom d'utilisateur, email, mot de passe, confirmation du mot de passe, et acceptation des conditions (case à cocher obligatoire).\n- Une inscription réussie connecte l'utilisateur ou confirme la création du compte.\n- Un mot de passe et sa confirmation différents doivent être rejetés (à vérifier).\n\nPriorité : Haute (Must have).",
     "criticite": "CRITICAL"
   },
-  "cas": {
-    "reference": "TC-HVC-6",
-    "nom": "TC-HVC-6 - Inscription d'un nouveau compte",
-    "description": "Automatise par tests/tc-hvc-6-inscription-compte.spec.ts. Verifie l exigence HVC-6.",
-    "prerequis": "",
-    "importance": "HIGH",
-    "pas": [
-      {
-        "action": "Ouvrir la page d'accueil, cliquer sur S'inscrire, remplir le formulaire avec nom d'utilisateur, email, mot de passe et confirmation identiques, accepter les conditions, puis valider.",
-        "resultat_attendu": "Le compte est cree (ou l utilisateur est connecte)."
-      },
-      {
-        "action": "Rouvrir le formulaire d'inscription et le remplir avec un mot de passe et une confirmation differents, puis valider.",
-        "resultat_attendu": "Un message d erreur signale que les mots de passe ne correspondent pas."
-      }
-    ]
-  },
+  "cas": [
+    {
+      "reference": "TC-HVC-6-1",
+      "nom": "Inscription d'un nouveau compte : champs et case des conditions obligatoires (critère 1)",
+      "description": "Vérifie que le formulaire d'inscription refuse d'être envoyé tant qu'un des champs obligatoires (nom d'utilisateur, email, mot de passe, confirmation) est vide ou que la case d'acceptation des conditions n'est pas cochée.",
+      "prerequis": "Le visiteur n'est pas connecté. Il dispose d'un nom d'utilisateur et d'une adresse email qui n'ont encore jamais servi sur le site.",
+      "importance": "HIGH",
+      "pas": [
+        {
+          "action": "Depuis la page d'accueil, cliquer sur « S'inscrire ».",
+          "resultat_attendu": "Le formulaire d'inscription s'affiche avec les champs Nom d'utilisateur, Email, Mot de passe, Confirmation du mot de passe et une case à cocher d'acceptation des conditions."
+        },
+        {
+          "action": "Remplir tous les champs correctement (deux mots de passe identiques), mais laisser le champ Nom d'utilisateur vide, puis valider.",
+          "resultat_attendu": "L'inscription n'est pas faite : le formulaire reste affiché et un message indique que le nom d'utilisateur est obligatoire."
+        },
+        {
+          "action": "Renseigner le nom d'utilisateur, vider le champ Email, puis valider.",
+          "resultat_attendu": "L'inscription n'est pas faite : le formulaire reste affiché et un message indique que l'email est obligatoire."
+        },
+        {
+          "action": "Renseigner l'email, vider le champ Mot de passe, puis valider.",
+          "resultat_attendu": "L'inscription n'est pas faite : le formulaire reste affiché et un message indique que le mot de passe est obligatoire."
+        },
+        {
+          "action": "Renseigner le mot de passe, vider le champ Confirmation du mot de passe, puis valider.",
+          "resultat_attendu": "L'inscription n'est pas faite : le formulaire reste affiché et un message indique que la confirmation du mot de passe est obligatoire."
+        },
+        {
+          "action": "Renseigner la confirmation (identique au mot de passe), laisser la case d'acceptation des conditions décochée, puis valider.",
+          "resultat_attendu": "L'inscription n'est pas faite : le formulaire reste affiché et un message indique qu'il faut accepter les conditions."
+        }
+      ]
+    },
+    {
+      "reference": "TC-HVC-6-2",
+      "nom": "Inscription d'un nouveau compte : inscription réussie (critère 2)",
+      "description": "Vérifie qu'un visiteur qui remplit correctement le formulaire et accepte les conditions obtient un compte : il est connecté, ou la création du compte lui est confirmée.",
+      "prerequis": "Le visiteur n'est pas connecté. Il dispose d'un nom d'utilisateur et d'une adresse email qui n'ont encore jamais servi sur le site.",
+      "importance": "HIGH",
+      "pas": [
+        {
+          "action": "Depuis la page d'accueil, cliquer sur « S'inscrire ».",
+          "resultat_attendu": "Le formulaire d'inscription s'affiche."
+        },
+        {
+          "action": "Saisir un nom d'utilisateur, une adresse email, un mot de passe et sa confirmation identique, cocher la case d'acceptation des conditions, puis valider.",
+          "resultat_attendu": "Un message confirme que le compte a été créé, ou le visiteur est directement connecté (son nom d'utilisateur ou un accès à son compte apparaît à l'écran)."
+        }
+      ]
+    },
+    {
+      "reference": "TC-HVC-6-3",
+      "nom": "Inscription d'un nouveau compte : mots de passe différents refusés (critère 3)",
+      "description": "Vérifie qu'une inscription est refusée quand le mot de passe et sa confirmation ne sont pas identiques.",
+      "prerequis": "Le visiteur n'est pas connecté. Il dispose d'un nom d'utilisateur et d'une adresse email qui n'ont encore jamais servi sur le site.",
+      "importance": "HIGH",
+      "pas": [
+        {
+          "action": "Depuis la page d'accueil, cliquer sur « S'inscrire ».",
+          "resultat_attendu": "Le formulaire d'inscription s'affiche."
+        },
+        {
+          "action": "Saisir un nom d'utilisateur, une adresse email, un mot de passe et une confirmation différente du mot de passe, cocher la case d'acceptation des conditions, puis valider.",
+          "resultat_attendu": "L'inscription est refusée : le formulaire reste affiché, un message d'erreur signale que les mots de passe ne correspondent pas, et le visiteur n'est pas connecté."
+        }
+      ]
+    }
+  ],
   "iteration_id": 1
 }

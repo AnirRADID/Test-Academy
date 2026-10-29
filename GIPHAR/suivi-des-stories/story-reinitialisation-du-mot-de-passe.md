@@ -2,14 +2,61 @@
 
 | | |
 |---|---|
-| **Où en est-on** | Terminé |
-| **Prochaine action** | Aucune |
+| **Où en est-on** | Étape 2 sur 6 — 2 cas de test en attente de votre validation |
+| **Prochaine action** | Relire les cas TC-HVC-8-1 et TC-HVC-8-2 dans Squash, puis cliquer sur [Valider ou refuser les cas](http://localhost:5678/form-waiting/125?signature=f521a26ff1de67894006ce8dacab512e5514562cfe86ef003cc2db065c2f3e02) |
 | **Story Jira** | [Réinitialisation du mot de passe](https://testacademy.atlassian.net/browse/HVC-8) |
-| **Dernière mise à jour** | 20/10/2026 19:45 par l'agent rapporteur |
+| **Dernière mise à jour** | 25/10/2026 12:23 par l'agent analyste |
 
-## 1. Cas de test rédigé — agent analyste
+## 1. Cas de test rédigés — agent analyste
 
-**Nom** : TC-HVC-8 - Réinitialisation du mot de passe (2 étapes)
+**Passage du 25/10/2026 12:23** : la story Jira n'a pas changé (même titre, même description,
+mêmes deux critères d'acceptation). En revanche, elle n'avait jusqu'ici **qu'un seul cas**
+(TC-HVC-8) pour ses deux critères. Elle a donc été découpée en **un cas par critère** :
+l'ancien cas TC-HVC-8 a été renommé TC-HVC-8-1 (son historique est conservé), et le cas
+TC-HVC-8-2 a été créé. Les deux cas sont au statut « À approuver ».
+
+### TC-HVC-8-1 — Réinitialisation du mot de passe : le lien « mot de passe oublié ? » ouvre le formulaire (critère 1)
+
+**Ce qu'il vérifie** : critère 1 — le lien « mot de passe oublié ? » ouvre un formulaire qui
+demande l'email ou l'identifiant.
+
+**Avant de commencer** : le visiteur n'est pas connecté et se trouve sur la page d'accueil.
+
+**Les étapes** :
+1. Depuis la page d'accueil, cliquer sur « Se connecter ».
+   → La fenêtre de connexion s'affiche et propose le lien « mot de passe oublié ? ».
+2. Cliquer sur le lien « mot de passe oublié ? ».
+   → Le formulaire de réinitialisation s'affiche : il demande l'email ou l'identifiant et
+   propose un bouton pour envoyer la demande.
+
+### TC-HVC-8-2 — Réinitialisation du mot de passe : l'envoi du formulaire déclenche l'email de réinitialisation (critère 2)
+
+**Ce qu'il vérifie** : critère 2 — l'envoi du formulaire déclenche l'envoi d'un email de
+réinitialisation.
+
+**Avant de commencer** : un compte existe déjà sur le site avec une adresse email connue du
+testeur (le site refuse la demande pour une adresse qui ne correspond à aucun compte). Le
+visiteur n'est pas connecté.
+
+**Les étapes** :
+1. Depuis la page d'accueil, cliquer sur « Se connecter » puis sur « mot de passe oublié ? ».
+   → Le formulaire de réinitialisation s'affiche et demande l'email ou l'identifiant.
+2. Saisir l'adresse email du compte existant, puis cliquer sur le bouton d'envoi.
+   → Après un court message d'attente, un message confirme qu'un email de réinitialisation a
+   été envoyé (« Check your email »).
+
+**Points à surveiller lors de la relecture** :
+- Le critère 2 parle d'une vérification « côté back-end » : le cas vérifie le message de
+  confirmation affiché à l'écran, pas la réception réelle de l'email dans la boîte du
+  visiteur.
+- Aucun cas d'erreur n'est testé (email vide ou inconnu) : les critères n'en mentionnent pas.
+- Pour l'agent automaticien : le cas TC-HVC-8-1 est encore relié au test automatisé de
+  l'ancien cas unique TC-HVC-8. Ce test couvre les deux critères. Il faudra le répartir entre
+  TC-HVC-8-1 et TC-HVC-8-2.
+
+### Historique des passages précédents
+
+**Nom (ancien cas unique)** : TC-HVC-8 - Réinitialisation du mot de passe (2 étapes)
 
 **Ce qu'il vérifie** : le lien « mot de passe oublié ? » ouvre un formulaire demandant
 l'email ou l'identifiant, et l'envoi de ce formulaire confirme que la demande de
@@ -39,9 +86,18 @@ d'acceptation) n'a pas changé depuis la rédaction du cas : cas inchangé depui
 version soumise. Il n'a pas été modifié, seulement remis au statut « À approuver » pour une
 nouvelle relecture humaine. Les points à surveiller ci-dessus restent valables.
 
+Note du 25/10/2026 12:18 : nouveau passage **bloqué**. Le connecteur Atlassian de Claude
+demande une nouvelle autorisation : la story n'a donc pas pu être relue dans Jira. Sans cette
+lecture, impossible de vérifier si la story a changé ni de rédiger un cas par critère
+d'acceptation (le cas actuel est encore un cas unique TC-HVC-8 pour deux critères). Rien n'a
+été modifié dans Squash ni dans Jira. Le cas existant reste tel quel, au statut « Approuvé ».
+
 ## 2. Validation humaine
 
-Cas validé le 20/10/2026 19:35. Remarques du valideur : aucune.
+**En attente de validation** (depuis le 25/10/2026 12:23) des cas TC-HVC-8-1 et TC-HVC-8-2 :
+[Valider ou refuser les cas](http://localhost:5678/form-waiting/125?signature=f521a26ff1de67894006ce8dacab512e5514562cfe86ef003cc2db065c2f3e02)
+
+Passage précédent : cas unique TC-HVC-8 validé le 20/10/2026 19:35. Remarques du valideur : aucune.
 
 ## 3. Test automatisé — agent automaticien
 

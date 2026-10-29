@@ -2,25 +2,77 @@
   "story_jira": "HVC-7",
   "exigence": {
     "nom": "HVC-7 - Connexion utilisateur",
-    "description": "En tant qu'utilisateur enregistré, je veux me connecter avec mon identifiant et mon mot de passe, afin d'accéder à mon espace personnel.\n\nCritères d'acceptation :\n- Le formulaire de connexion accepte nom d'utilisateur ou email + mot de passe.\n- Une option « se souvenir de moi » (case Remember) prolonge la session.\n- Des identifiants invalides affichent un message d'erreur clair.",
+    "description": "En tant qu'utilisateur enregistré, je veux me connecter avec mon identifiant et mon mot de passe, afin d'accéder à mon espace personnel.\n\nCritères d'acceptation :\n- Le formulaire de connexion accepte nom d'utilisateur ou email + mot de passe.\n- Une option « se souvenir de moi » (checkbox remember) prolonge la session.\n- Des identifiants invalides affichent un message d'erreur clair (à vérifier).\n\nPriorité : Haute (Must have).",
     "criticite": "CRITICAL"
   },
-  "cas": {
-    "reference": "TC-HVC-7",
-    "nom": "TC-HVC-7 - Connexion utilisateur",
-    "description": "Automatise par tests/tc-hvc-7-connexion-utilisateur.spec.ts. Verifie l exigence HVC-7.",
-    "prerequis": "",
-    "importance": "HIGH",
-    "pas": [
-      {
-        "action": "Ouvrir la page d'accueil, cliquer sur Se connecter, saisir des identifiants valides, cocher Se souvenir de moi, puis valider.",
-        "resultat_attendu": "L'utilisateur est connecte : le lien Se connecter n'est plus visible."
-      },
-      {
-        "action": "Se deconnecter puis se connecter avec des identifiants invalides.",
-        "resultat_attendu": "Un message d erreur clair indique que les identifiants sont incorrects."
-      }
-    ]
-  },
+  "cas": [
+    {
+      "reference": "TC-HVC-7-1",
+      "nom": "Connexion utilisateur : connexion par nom d'utilisateur ou par email (critère 1)",
+      "description": "Vérifie que le formulaire de connexion accepte aussi bien le nom d'utilisateur que l'adresse email, accompagnés du mot de passe.",
+      "prerequis": "Un compte utilisateur existe, dont on connaît le nom d'utilisateur, l'adresse email et le mot de passe. Le testeur n'est pas connecté.",
+      "importance": "HIGH",
+      "pas": [
+        {
+          "action": "Ouvrir la page d'accueil du site, puis cliquer sur « Se connecter ».",
+          "resultat_attendu": "Le formulaire de connexion s'affiche, avec un champ pour le nom d'utilisateur ou l'email, un champ pour le mot de passe et un bouton pour valider."
+        },
+        {
+          "action": "Saisir le nom d'utilisateur du compte et son mot de passe, puis valider.",
+          "resultat_attendu": "L'utilisateur est connecté : le lien « Se connecter » n'est plus visible et l'utilisateur a accès à son espace personnel."
+        },
+        {
+          "action": "Se déconnecter.",
+          "resultat_attendu": "L'utilisateur est déconnecté : le lien « Se connecter » est de nouveau visible."
+        },
+        {
+          "action": "Cliquer sur « Se connecter », saisir cette fois l'adresse email du compte et son mot de passe, puis valider.",
+          "resultat_attendu": "L'utilisateur est connecté : le lien « Se connecter » n'est plus visible et l'utilisateur a accès à son espace personnel."
+        }
+      ]
+    },
+    {
+      "reference": "TC-HVC-7-2",
+      "nom": "Connexion utilisateur : « Se souvenir de moi » prolonge la session (critère 2)",
+      "description": "Vérifie que l'option « Se souvenir de moi » garde l'utilisateur connecté après la fermeture du navigateur, contrairement à une connexion sans cette option.",
+      "prerequis": "Un compte utilisateur existe, dont on connaît le nom d'utilisateur et le mot de passe. Le testeur n'est pas connecté.",
+      "importance": "HIGH",
+      "pas": [
+        {
+          "action": "Ouvrir la page d'accueil du site, puis cliquer sur « Se connecter ».",
+          "resultat_attendu": "Le formulaire de connexion s'affiche et propose une case à cocher « Se souvenir de moi »."
+        },
+        {
+          "action": "Saisir des identifiants valides, cocher « Se souvenir de moi », puis valider.",
+          "resultat_attendu": "L'utilisateur est connecté : le lien « Se connecter » n'est plus visible."
+        },
+        {
+          "action": "Fermer complètement le navigateur, le rouvrir, puis revenir sur la page d'accueil du site.",
+          "resultat_attendu": "L'utilisateur est toujours connecté : le lien « Se connecter » n'est pas visible, sans avoir eu à ressaisir ses identifiants."
+        },
+        {
+          "action": "Se déconnecter, puis se reconnecter avec des identifiants valides SANS cocher « Se souvenir de moi ». Fermer complètement le navigateur, le rouvrir et revenir sur la page d'accueil.",
+          "resultat_attendu": "L'utilisateur n'est plus connecté : le lien « Se connecter » est de nouveau visible."
+        }
+      ]
+    },
+    {
+      "reference": "TC-HVC-7-3",
+      "nom": "Connexion utilisateur : message d'erreur clair si les identifiants sont invalides (critère 3)",
+      "description": "Vérifie que des identifiants invalides refusent la connexion et affichent un message d'erreur clair.",
+      "prerequis": "Un compte utilisateur existe, dont on connaît le nom d'utilisateur. Le testeur n'est pas connecté.",
+      "importance": "HIGH",
+      "pas": [
+        {
+          "action": "Ouvrir la page d'accueil du site, cliquer sur « Se connecter », saisir le nom d'utilisateur d'un compte existant avec un mauvais mot de passe, puis valider.",
+          "resultat_attendu": "La connexion est refusée : le formulaire reste affiché et un message d'erreur clair indique que les identifiants sont incorrects. Le lien « Se connecter » est toujours visible."
+        },
+        {
+          "action": "Saisir un nom d'utilisateur ou un email qui ne correspond à aucun compte, avec un mot de passe quelconque, puis valider.",
+          "resultat_attendu": "La connexion est refusée : le même message d'erreur clair s'affiche et l'utilisateur n'est pas connecté."
+        }
+      ]
+    }
+  ],
   "iteration_id": 1
 }

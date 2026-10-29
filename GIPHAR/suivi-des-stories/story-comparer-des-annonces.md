@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Où en est-on** | Étape 2 sur 6 — cas de test en attente de votre validation |
-| **Prochaine action** | Relire le cas de test TC-HVC-10 dans Squash, puis cliquer sur [Valider ou refuser le cas](http://localhost:5678/form-waiting/82?signature=f0bc7af52bd23e1e3f93d616fcefce725c419c9ecbc89a7bd407415476312bfd) |
+| **Où en est-on** | Étape 4 sur 6 — test automatisé écrit et vérifié, en attente de l'exécution de la campagne |
+| **Prochaine action** | L'agent exécutant joue la campagne et envoie les résultats dans Squash |
 | **Story Jira** | [Comparer des annonces](https://testacademy.atlassian.net/browse/HVC-10) |
-| **Dernière mise à jour** | 20/10/2026 19:30 par l'agent analyste |
+| **Dernière mise à jour** | 25/10/2026 12:20 par l'agent automaticien |
 
 ## 1. Cas de test rédigé — agent analyste
 
@@ -46,12 +46,28 @@ exigés.
 
 ## 2. Validation humaine
 
-En attente de validation : relire le cas TC-HVC-10 dans Squash, puis
-[valider ou refuser le cas](http://localhost:5678/form-waiting/82?signature=f0bc7af52bd23e1e3f93d616fcefce725c419c9ecbc89a7bd407415476312bfd).
+Cas validé le 25/10/2026 12:20. Remarques du valideur : aucune.
 
 ## 3. Test automatisé — agent automaticien
 
-_En attente._
+Le test automatisé existant (qui ne suivait que les 3 étapes de l'ancien cas) a été
+**repris** pour suivre fidèlement le cas validé.
+
+- **TC-HVC-10 — Comparer des annonces** : 5 étapes, une par étape du cas.
+  Verdict de la vérification du 25/10/2026 12:20 : **passe sur le site**.
+  Le test lance une recherche sur Miami, ajoute les deux premiers logements à la
+  comparaison (le compteur affiche bien 2), ouvre le panneau (les deux logements y
+  figurent), clique sur « Comparer » et vérifie que la page montre les deux logements
+  côte à côte, chacun avec sa photo et son titre. Il contrôle enfin, pour chacun des deux
+  logements, le prix, le nombre de chambres (la capacité) et des équipements
+  (climatisation, Wi-Fi), marqués présents ou absents.
+
+Bon à savoir : la page de comparaison n'affiche pas le nombre de voyageurs, seulement les
+chambres, salles de bain et lits ; le cas validé accepte le nombre de chambres comme
+mesure de la capacité.
+
+Le cas est déclaré « automatisé » dans Squash : ses résultats y remonteront à chaque
+exécution de la campagne.
 
 ## 4. Exécution de la campagne — agent exécutant
 
@@ -69,3 +85,4 @@ _En attente._
 
 Fichier de données Squash : `suivi-des-stories/donnees-squash/story-comparer-des-annonces.json`
 · cas Squash TC-HVC-10 · itération Squash 1
+· test automatisé `tests/tc-hvc-10-comparer-annonces.spec.ts` (vérifié en 2 essais le 25/10/2026)

@@ -2,12 +2,80 @@
 
 | | |
 |---|---|
-| **Où en est-on** | Terminé |
-| **Prochaine action** | Aucune |
+| **Où en est-on** | Étape 2 sur 6 — 3 cas de test en attente de votre validation |
+| **Prochaine action** | Relire les 3 cas TC-HVC-6-1 à TC-HVC-6-3 dans Squash, puis cliquer sur [Valider ou refuser les cas](http://localhost:5678/form-waiting/121?signature=57ff7fad4d7d5764ad2fc3339815212ea2e491524e4920e2e76e395ecb822899) |
 | **Story Jira** | [Inscription d'un nouveau compte](https://testacademy.atlassian.net/browse/HVC-6) |
-| **Dernière mise à jour** | 20/10/2026 19:44 par l'agent rapporteur |
+| **Dernière mise à jour** | 25/10/2026 12:23 par l'agent analyste |
 
-## 1. Cas de test rédigé — agent analyste
+## 1. Cas de test rédigés — agent analyste
+
+### Passage du 25/10/2026 12:23 — un cas par critère d'acceptation
+
+La story n'a pas changé (titre, description et critères d'acceptation identiques). Mais elle
+compte **3 critères d'acceptation** et Squash n'avait qu'un seul cas (TC-HVC-6). Le cas a donc
+été découpé en **3 cas, un par critère**. L'ancien cas TC-HVC-6 devient TC-HVC-6-1 (son
+historique est conservé). Les cas TC-HVC-6-2 et TC-HVC-6-3 ont été créés. Les 3 cas sont au
+statut « À approuver ». Ce découpage règle aussi les points à surveiller notés lors des
+passages précédents (voir plus bas) : le critère 1 est maintenant vérifié, et chaque résultat
+attendu dit ce que le testeur doit voir à l'écran.
+
+#### TC-HVC-6-1 — Inscription d'un nouveau compte : champs et case des conditions obligatoires (critère 1)
+
+**Ce qu'il vérifie** : le formulaire exige nom d'utilisateur, email, mot de passe,
+confirmation du mot de passe et acceptation des conditions. L'inscription est refusée si l'un
+d'eux manque.
+
+**Les étapes** (6) :
+1. Depuis la page d'accueil, cliquer sur « S'inscrire ».
+   → Le formulaire s'affiche avec les champs Nom d'utilisateur, Email, Mot de passe,
+   Confirmation du mot de passe et la case d'acceptation des conditions.
+2. Tout remplir correctement, sauf le nom d'utilisateur (laissé vide), puis valider.
+   → Le formulaire reste affiché et un message indique que le nom d'utilisateur est obligatoire.
+3. Renseigner le nom d'utilisateur, vider l'email, puis valider.
+   → Le formulaire reste affiché et un message indique que l'email est obligatoire.
+4. Renseigner l'email, vider le mot de passe, puis valider.
+   → Le formulaire reste affiché et un message indique que le mot de passe est obligatoire.
+5. Renseigner le mot de passe, vider la confirmation, puis valider.
+   → Le formulaire reste affiché et un message indique que la confirmation est obligatoire.
+6. Renseigner la confirmation, laisser la case des conditions décochée, puis valider.
+   → Le formulaire reste affiché et un message indique qu'il faut accepter les conditions.
+
+#### TC-HVC-6-2 — Inscription d'un nouveau compte : inscription réussie (critère 2)
+
+**Ce qu'il vérifie** : une inscription correcte connecte le visiteur ou lui confirme que son
+compte a été créé.
+
+**Les étapes** (2) :
+1. Depuis la page d'accueil, cliquer sur « S'inscrire ».
+   → Le formulaire d'inscription s'affiche.
+2. Saisir un nom d'utilisateur, un email, un mot de passe et une confirmation identique,
+   cocher la case des conditions, puis valider.
+   → Un message confirme la création du compte, ou le visiteur est connecté (son nom
+   d'utilisateur ou un accès à son compte apparaît à l'écran).
+
+#### TC-HVC-6-3 — Inscription d'un nouveau compte : mots de passe différents refusés (critère 3)
+
+**Ce qu'il vérifie** : l'inscription est refusée quand le mot de passe et sa confirmation
+sont différents.
+
+**Les étapes** (2) :
+1. Depuis la page d'accueil, cliquer sur « S'inscrire ».
+   → Le formulaire d'inscription s'affiche.
+2. Tout remplir, avec une confirmation différente du mot de passe, cocher la case des
+   conditions, puis valider.
+   → Le formulaire reste affiché, un message d'erreur signale que les mots de passe ne
+   correspondent pas, et le visiteur n'est pas connecté.
+
+**À noter pour l'automaticien** : le cas TC-HVC-6-1 reprend l'ancien cas TC-HVC-6. Dans
+Squash, il reste déclaré « automatisé » sous l'ancienne référence TC-HVC-6, avec le test
+existant (qui vérifiait l'inscription réussie et les mots de passe différents). Son contenu
+correspond maintenant au critère 1. Il faut donc revoir le test automatisé et sa déclaration,
+cas par cas. Les cas TC-HVC-6-2 et TC-HVC-6-3 ne sont pas encore automatisés.
+
+**Traçabilité** : `suivi-des-stories/donnees-squash/story-inscription-d-un-nouveau-compte.json`
+· commande `modifier-cas` · cas Squash id 8 (TC-HVC-6-1), 53 (TC-HVC-6-2), 55 (TC-HVC-6-3)
+
+### Historique des passages précédents (cas unique TC-HVC-6)
 
 **Nom** : TC-HVC-6 - Inscription d'un nouveau compte (2 étapes)
 
@@ -49,6 +117,14 @@ est inchangé depuis sa dernière approbation**. Il a été remis au statut « �
 un humain doit le valider à chaque lancement. Les points à surveiller listés plus haut
 restent valables.
 
+**Passage du 25/10/2026 12:18 — bloqué.** La story n'a pas pu être lue dans Jira : le
+connecteur Atlassian de Claude n'est pas autorisé dans cette session. Il faut le reconnecter
+dans les réglages de claude.ai. Sans la story, impossible de savoir si elle a changé, ni de
+découper le cas actuel en un cas par critère d'acceptation (la story compte 3 critères, et
+Squash n'a toujours qu'un cas unique, TC-HVC-6). Pour ne rien deviner, **rien n'a été modifié
+dans Squash** : le cas TC-HVC-6 reste tel quel, au statut « Approuvé ». Aucun commentaire n'a
+été ajouté dans Jira.
+
 ## 2. Validation humaine
 
 **Passage du 20/10/2026 19:30** : en attente de validation.
@@ -60,6 +136,13 @@ Cas validé le 20/10/2026 19:14 (approbation d'un passage précédent, reconduit
 remarque du valideur.
 
 Cas validé le 20/10/2026 19:35 (passage du 20/10/2026 19:30). Aucune remarque du valideur.
+
+**Passage du 25/10/2026 12:18** : rien à valider pour l'instant. L'analyste est bloqué, car
+la story Jira n'a pas pu être lue (voir section 1).
+
+**Passage du 25/10/2026 12:23** : en attente de validation des 3 cas (TC-HVC-6-1,
+TC-HVC-6-2, TC-HVC-6-3).
+[Valider ou refuser les cas](http://localhost:5678/form-waiting/121?signature=57ff7fad4d7d5764ad2fc3339815212ea2e491524e4920e2e76e395ecb822899)
 
 ## 3. Test automatisé — agent automaticien
 
